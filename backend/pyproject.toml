@@ -9,31 +9,31 @@ description = "Brazilian economic indicators extractor and dashboard API"
 requires-python = ">=3.12"
 dependencies = [
     # Web framework
-    "fastapi==0.115.5",
-    "uvicorn[standard]==0.32.1",
+    "fastapi==0.136.1",
+    "uvicorn[standard]==0.46.0",
 
     # Database
-    "sqlalchemy[asyncio]==2.0.36",
-    "asyncpg==0.30.0",
-    "psycopg2-binary==2.9.10",  # sync driver for APScheduler SQLAlchemyJobStore
-    "alembic==1.14.0",
+    "sqlalchemy[asyncio]==2.0.49",
+    "asyncpg==0.31.0",
+    "psycopg2-binary==2.9.12",  # sync driver for APScheduler SQLAlchemyJobStore
+    "alembic==1.18.4",
 
     # Data validation and settings
-    "pydantic==2.10.3",
-    "pydantic-settings==2.7.0",
+    "pydantic==2.13.4",
+    "pydantic-settings==2.14.1",
 
     # Data processing
     "pandas==2.2.3",
-    "numpy==2.2.0",
+    "numpy==2.4.4",
 
     # HTTP client
     "httpx==0.28.1",
 
     # Retry logic
-    "tenacity==9.0.0",
+    "tenacity==9.1.4",
 
     # Scheduling
-    "apscheduler==3.10.4",
+    "apscheduler==3.11.2",
 
     # Cache
     "redis==5.2.1",
@@ -45,7 +45,7 @@ dependencies = [
     "loguru==0.7.3",
 
     # HTML parsing (calendar scrapers — Phase 6)
-    "beautifulsoup4==4.12.3",
+    "beautifulsoup4==4.14.3",
     "lxml==5.3.0",
     "openpyxl==3.1.5",  # Parse ANBIMA bulk-history XLSX files from data.anbima.com.br
 ]
@@ -59,7 +59,7 @@ dev = [
     "httpx==0.28.1",  # for AsyncClient in tests
 
     # Code quality
-    "ruff==0.8.4",
+    "ruff==0.15.12",
     "black==24.10.0",
     "mypy==1.13.0",
 
