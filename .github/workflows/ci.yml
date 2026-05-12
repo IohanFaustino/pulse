@@ -182,7 +182,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -270,7 +270,7 @@ jobs:
 
       # ── TypeScript / Prettier (frontend) ──────────────────────────────────
       - name: Set up Node ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -415,7 +415,7 @@ jobs:
 
       # ── npm audit: JS dependency CVE check ───────────────────────────────
       - name: Set up Node ${{ env.NODE_VERSION }} (security)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
 
