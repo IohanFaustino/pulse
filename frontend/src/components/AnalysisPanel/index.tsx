@@ -18,50 +18,21 @@ import { createPortal } from 'react-dom'
 import styles from './AnalysisPanel.module.css'
 import Chart, { type ChartFormat, type ChartDataPoint, type ChartHandle } from '@/components/Chart'
 import { useTransformMutation } from '@/hooks/useTransform'
+import { useTranslation } from '@/lib/i18n'
 import { exportSvgToPng } from '@/lib/exportSvg'
 import { exportCsv } from '@/lib/exportCsv'
 import type { TransformSpec } from '@/hooks/useTransform'
+import { categoryColor } from '@/lib/categoryColor'
+import { splitUnit } from '@/lib/formatPtBR'
 
 // ── Transform option definitions (mirrors TransformModal) ─────────────────────
 
-interface OptionDef {
-  op: string
-  label: string
-}
-
-const GROUP_ORIGINAL: OptionDef[] = [
-  { op: 'level',        label: 'Nível (original)' },
-  { op: 'sa',           label: 'Dessazonalizado' },
-  { op: 'calendar_adj', label: 'Ajuste de calendário' },
-]
-
-const GROUP_VARIACAO: OptionDef[] = [
-  { op: 'mom',        label: 'MoM — variação mensal' },
-  { op: 'qoq',        label: 'QoQ — variação trimestral' },
-  { op: 'yoy',        label: 'YoY — variação anual' },
-  { op: 'annualized', label: 'Anualizada' },
-  { op: 'diff',       label: 'Primeira diferença' },
-  { op: 'log_diff',   label: 'Log-diferença' },
-  { op: 'pp',         label: 'Pontos percentuais' },
-]
-
-const GROUP_SUAVIZACAO: OptionDef[] = [
-  { op: 'ma_3',   label: 'Média móvel 3m' },
-  { op: 'ma_6',   label: 'Média móvel 6m' },
-  { op: 'ma_12',  label: 'Média móvel 12m' },
-  { op: 'ewma',   label: 'EWMA (span)' },
-]
-
-const GROUP_JANELAS: OptionDef[] = [
-  { op: 'accum12',  label: 'Acumulado 12m' },
-  { op: 'stddev12', label: 'Desvio-padrão 12m' },
-]
-
-const GROUP_NORMALIZACAO: OptionDef[] = [
-  { op: 'rebase',     label: 'Rebase = 100' },
-  { op: 'zscore',     label: 'Z-score' },
-  { op: 'percentile', label: 'Percentil' },
-]
+/** Op codes only — labels resolved via i18n (`analysis.op.<op>`). */
+const GROUP_ORIGINAL = ['level', 'sa', 'calendar_adj'] as const
+const GROUP_VARIACAO = ['mom', 'qoq', 'yoy', 'annualized', 'diff', 'log_diff', 'pp'] as const
+const GROUP_SUAVIZACAO = ['ma_3', 'ma_6', 'ma_12', 'ewma'] as const
+const GROUP_JANELAS = ['accum12', 'stddev12'] as const
+const GROUP_NORMALIZACAO = ['rebase', 'zscore', 'percentile'] as const
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -79,6 +50,10 @@ function opToSpec(op: string, ewmaSpan: number, rebaseBase: number): TransformSp
 export interface AnalysisPanelSeries {
   code: string
   name: string
+  /** Optional — unit suffix shown in chart hover tooltip */
+  unit?: string
+  /** Optional — category drives chart line/bar colour */
+  category?: string
 }
 
 interface AnalysisPanelProps {
@@ -92,6 +67,7 @@ interface AnalysisPanelProps {
 export default function AnalysisPanel({ series, open, onClose }: AnalysisPanelProps) {
   const id = useId()
   const chartRef = useRef<ChartHandle>(null)
+  const { t } = useTranslation()
 
   // Transform state
   const [selectedOp, setSelectedOp] = useState<string>('level')
@@ -170,31 +146,31 @@ export default function AnalysisPanel({ series, open, onClose }: AnalysisPanelPr
     exportCsv(chartData, `${series.code}_${appliedOp}.csv`)
   }
 
-  function renderGroup(groupLabel: string, options: OptionDef[], testId: string) {
+  function renderGroup(groupKey: string, ops: readonly string[], testId: string) {
     return (
       <fieldset className={styles.group} data-testid={testId}>
-        <legend className={styles.groupLabel}>{groupLabel}</legend>
+        <legend className={styles.groupLabel}>{t(groupKey)}</legend>
         <div className={styles.options}>
-          {options.map((opt) => {
-            const inputId = `${id}-${opt.op}`
+          {ops.map((op) => {
+            const inputId = `${id}-${op}`
             return (
-              <label key={opt.op} className={styles.option} htmlFor={inputId}>
+              <label key={op} className={styles.option} htmlFor={inputId}>
                 <input
                   type="radio"
                   id={inputId}
                   name={`${id}-transform`}
-                  value={opt.op}
-                  checked={selectedOp === opt.op}
-                  onChange={() => setSelectedOp(opt.op)}
-                  data-testid={`ap-radio-${opt.op}`}
+                  value={op}
+                  checked={selectedOp === op}
+                  onChange={() => setSelectedOp(op)}
+                  data-testid={`ap-radio-${op}`}
                 />
-                <span className={styles.optionLabel}>{opt.label}</span>
+                <span className={styles.optionLabel}>{t(`analysis.op.${op}`)}</span>
               </label>
             )
           })}
         </div>
 
-        {groupLabel === 'Suavização' && selectedOp === 'ewma' && (
+        {groupKey === 'analysis.group.suavizacao' && selectedOp === 'ewma' && (
           <div className={styles.paramRow}>
             <label className={styles.paramLabel} htmlFor={`${id}-ewma-span`}>
               span
@@ -211,7 +187,7 @@ export default function AnalysisPanel({ series, open, onClose }: AnalysisPanelPr
             />
           </div>
         )}
-        {groupLabel === 'Normalização' && selectedOp === 'rebase' && (
+        {groupKey === 'analysis.group.normalizacao' && selectedOp === 'rebase' && (
           <div className={styles.paramRow}>
             <label className={styles.paramLabel} htmlFor={`${id}-rebase-base`}>
               base
@@ -244,7 +220,7 @@ export default function AnalysisPanel({ series, open, onClose }: AnalysisPanelPr
         {/* ── Header ── */}
         <header className={styles.header}>
           <div className={styles.headerText}>
-            <p className={styles.kicker}>Análise</p>
+            <p className={styles.kicker}>{t('analysis.kicker')}</p>
             <h2 id={`${id}-title`} className={styles.title}>
               <span className={styles.titleCode}>{series.code}</span>
               {' '}— {series.name}
@@ -253,7 +229,7 @@ export default function AnalysisPanel({ series, open, onClose }: AnalysisPanelPr
           <button
             className={styles.closeBtn}
             onClick={onClose}
-            aria-label="Fechar painel de análise"
+            aria-label={t('analysis.btn.close')}
             data-testid="analysis-panel-close"
             type="button"
           >
@@ -273,7 +249,7 @@ export default function AnalysisPanel({ series, open, onClose }: AnalysisPanelPr
             data-testid="ap-accordion-transform"
             type="button"
           >
-            Transformação
+            {t('analysis.acc.transform')}
             <span
               className={[styles.chevron, transformOpen ? styles.open : ''].filter(Boolean).join(' ')}
               aria-hidden="true"
@@ -283,11 +259,11 @@ export default function AnalysisPanel({ series, open, onClose }: AnalysisPanelPr
           </button>
           {transformOpen && (
             <div className={styles.accordionBody} data-testid="ap-transform-body">
-              {renderGroup('Série original', GROUP_ORIGINAL, 'ap-group-original')}
-              {renderGroup('Variação', GROUP_VARIACAO, 'ap-group-variacao')}
-              {renderGroup('Suavização', GROUP_SUAVIZACAO, 'ap-group-suavizacao')}
-              {renderGroup('Janelas', GROUP_JANELAS, 'ap-group-janelas')}
-              {renderGroup('Normalização', GROUP_NORMALIZACAO, 'ap-group-normalizacao')}
+              {renderGroup('analysis.group.original', GROUP_ORIGINAL, 'ap-group-original')}
+              {renderGroup('analysis.group.variacao', GROUP_VARIACAO, 'ap-group-variacao')}
+              {renderGroup('analysis.group.suavizacao', GROUP_SUAVIZACAO, 'ap-group-suavizacao')}
+              {renderGroup('analysis.group.janelas', GROUP_JANELAS, 'ap-group-janelas')}
+              {renderGroup('analysis.group.normalizacao', GROUP_NORMALIZACAO, 'ap-group-normalizacao')}
             </div>
           )}
         </div>
@@ -301,7 +277,7 @@ export default function AnalysisPanel({ series, open, onClose }: AnalysisPanelPr
             data-testid="ap-accordion-format"
             type="button"
           >
-            Formato do gráfico
+            {t('analysis.acc.format')}
             <span
               className={[styles.chevron, formatOpen ? styles.open : ''].filter(Boolean).join(' ')}
               aria-hidden="true"
@@ -314,9 +290,9 @@ export default function AnalysisPanel({ series, open, onClose }: AnalysisPanelPr
               <div className={styles.options}>
                 {(['line', 'bar', 'area'] as ChartFormat[]).map((f) => {
                   const labels: Record<ChartFormat, string> = {
-                    line: 'Linha',
-                    bar: 'Barras',
-                    area: 'Área',
+                    line: t('analysis.format.line'),
+                    bar: t('analysis.format.bar'),
+                    area: t('analysis.format.area'),
                   }
                   return (
                     <label key={f} className={styles.option} htmlFor={`${id}-format-${f}`}>
@@ -351,18 +327,18 @@ export default function AnalysisPanel({ series, open, onClose }: AnalysisPanelPr
             data-testid="ap-clear-btn"
             type="button"
           >
-            Limpar
+            {t('analysis.btn.clear')}
           </button>
 
           {mutation.isError && (
             <p className={styles.errorMsg} role="alert">
-              Erro ao aplicar transformação. Tente novamente.
+              {t('analysis.error.transform')}
             </p>
           )}
 
           <span className={styles.kbdHint} aria-hidden="true">
-            <kbd>Esc</kbd> fechar
-            <kbd>Enter</kbd> aplicar
+            <kbd>Esc</kbd> {t('analysis.kbd.esc')}
+            <kbd>Enter</kbd> {t('analysis.kbd.enter')}
           </span>
 
           <button
@@ -372,7 +348,7 @@ export default function AnalysisPanel({ series, open, onClose }: AnalysisPanelPr
             data-testid="ap-apply-btn"
             type="button"
           >
-            {mutation.isPending ? 'Aplicando…' : 'Aplicar'}
+            {mutation.isPending ? t('analysis.btn.applying') : t('analysis.btn.apply')}
           </button>
         </div>
 
@@ -385,6 +361,8 @@ export default function AnalysisPanel({ series, open, onClose }: AnalysisPanelPr
               format={format}
               width={560}
               height={260}
+              unit={series.unit ? splitUnit(series.unit)[0] : undefined}
+              color={series.category ? categoryColor(series.category) : undefined}
             />
             <div className={styles.exportRow}>
               <button
@@ -393,7 +371,7 @@ export default function AnalysisPanel({ series, open, onClose }: AnalysisPanelPr
                 data-testid="ap-save-image"
                 type="button"
               >
-                Salvar imagem
+                {t('analysis.btn.saveImage')}
               </button>
               <button
                 className={styles.exportBtn}
@@ -401,7 +379,7 @@ export default function AnalysisPanel({ series, open, onClose }: AnalysisPanelPr
                 data-testid="ap-save-data"
                 type="button"
               >
-                Salvar dados
+                {t('analysis.btn.saveData')}
               </button>
             </div>
           </div>

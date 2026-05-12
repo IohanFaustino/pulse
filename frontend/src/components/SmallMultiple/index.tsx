@@ -137,7 +137,7 @@ export default function SmallMultiple({
 
       {/* AnalysisPanel — opened on card body click */}
       <AnalysisPanel
-        series={{ code, name }}
+        series={{ code, name, unit, category }}
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
       />

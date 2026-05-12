@@ -287,7 +287,7 @@ export default function DailyTable() {
       {panelSeries !== null &&
         createPortal(
           <AnalysisPanel
-            series={{ code: panelSeries.code, name: panelSeries.name }}
+            series={{ code: panelSeries.code, name: panelSeries.name, unit: panelSeries.unit, category: panelSeries.category }}
             open={panelSeries !== null}
             onClose={handlePanelClose}
           />,

@@ -455,7 +455,12 @@ function Dossier({ code }: DossierProps) {
       </section>
 
       <AnalysisPanel
-        series={{ code: series.code, name: series.name }}
+        series={{
+          code: series.code,
+          name: series.name,
+          unit: series.unit,
+          category: series.category,
+        }}
         open={analysisOpen}
         onClose={() => setAnalysisOpen(false)}
       />

@@ -277,7 +277,7 @@ export default function DailyRow() {
       {/* AnalysisPanel — portal, opened on chip click */}
       {panelSeries !== null && (
         <AnalysisPanel
-          series={{ code: panelSeries.code, name: panelSeries.name }}
+          series={{ code: panelSeries.code, name: panelSeries.name, unit: panelSeries.unit, category: panelSeries.category }}
           open={panelSeries !== null}
           onClose={handlePanelClose}
         />
