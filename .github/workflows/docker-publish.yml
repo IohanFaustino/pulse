@@ -97,7 +97,7 @@ jobs:
       # cache-from/to pulls/pushes layer cache from GHCR itself (registry mode)
       # which persists across runners unlike the ephemeral gha cache.
       - name: Build and push backend image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./backend
           file: ./backend/Dockerfile
@@ -152,7 +152,7 @@ jobs:
             org.opencontainers.image.vendor=api-extractor
 
       - name: Build and push frontend image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
