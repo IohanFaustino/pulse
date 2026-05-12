@@ -50,7 +50,7 @@ jobs:
       # QEMU is required to build arm64 images on the amd64 GitHub-hosted runner.
       # Without QEMU, the ARM build would fail with "exec format error".
       - name: Set up QEMU (multi-arch cross-compilation)
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       # BuildKit (via buildx) enables:
       #   - Parallel multi-arch builds
@@ -125,7 +125,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up QEMU (multi-arch cross-compilation)
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
