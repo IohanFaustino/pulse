@@ -1,0 +1,34 @@
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  color: var(--ink-on-accent);
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse-sync var(--duration-pulse) ease-in-out infinite;
+}
+
+.dotOk {
+  background: var(--up);
+}
+
+.dotPending {
+  background: var(--neutral, #c0a86a);
+}
+
+.dotDegraded {
+  background: var(--down);
+}
+
+.text {
+  white-space: nowrap;
+}

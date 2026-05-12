@@ -1,0 +1,211 @@
+/**
+ * Índices page — CSS Modules
+ *
+ * Design tokens from tokens.css only; no raw hex values.
+ *
+ * Structural model:
+ *   .page        — flex column, fixed height = 100dvh (window scroll disabled)
+ *   .header      — greeting block, flex-shrink: 0
+ *   .toolbar     — search + category toggle, flex-shrink: 0
+ *   .scrollArea  — flex: 1, overflow-y: auto → card grid scrolls inside page
+ */
+
+/* ── Page wrapper ─────────────────────────────────────────────────────────── */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: var(--bg);
+  overflow: hidden; /* scroll is on .scrollArea, not here */
+}
+
+/* ── Header area ──────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-6) var(--space-8) 0 var(--space-8);
+  flex-shrink: 0;
+}
+
+.greeting {
+  font-family: var(--font-serif);
+  /* Hero title — clearly larger than card codes (16px). Cards remain the
+     visual focus by sheer count, but the title needs presence to anchor the
+     page identity. */
+  font-size: clamp(1.5rem, 1vw + 1.25rem, 2rem);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--navy);
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.greetingSub {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  color: var(--ink);
+  opacity: 0.6;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Search input ─────────────────────────────────────────────────────────── */
+
+.searchWrap {
+  position: relative;
+  max-width: 28rem;
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  color: var(--ink);
+  opacity: 0.4;
+  pointer-events: none;
+  user-select: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: var(--space-2) var(--space-3) var(--space-2) calc(var(--space-3) + 1.25rem);
+  border: 1.5px solid var(--bg-deep);
+  border-radius: 8px;
+  background: var(--surface);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 160ms ease;
+  box-sizing: border-box;
+}
+
+.searchInput::placeholder {
+  color: var(--ink);
+  opacity: 0.35;
+}
+
+.searchInput:focus {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 2px var(--accent-ring);
+}
+
+/* ── Toolbar row: search + category toggle ────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-4) var(--space-8);
+  flex-shrink: 0;
+}
+
+/* ── Scrollable content area ──────────────────────────────────────────────── */
+
+.scrollArea {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0; /* essential: prevents flex child from overflowing parent */
+  padding: 0 var(--space-8) var(--space-8) var(--space-8);
+
+  /* Custom scrollbar — Webkit */
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-deep) var(--bg);
+}
+
+.scrollArea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollArea::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+.scrollArea::-webkit-scrollbar-thumb {
+  background: var(--bg-deep);
+  border-radius: var(--radius-pill);
+}
+
+.scrollArea::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ── Card grid ────────────────────────────────────────────────────────────── */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+/* ── Source group (used when category filter is active) ───────────────────── */
+
+.sourceGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.sourceGroup:last-child {
+  margin-bottom: 0;
+}
+
+.sourceHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;        /* 13px — slightly bolder anchor for category */
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+/* Category colour swatch — small pill anchored left of the heading. */
+.categorySwatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  /* background colour set inline from categoryColor() */
+}
+
+.categoryCount {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;        /* 11px */
+  font-weight: 500;
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+/* ── Count badge ──────────────────────────────────────────────────────────── */
+
+.count {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink);
+  opacity: 0.45;
+  align-self: center;
+  white-space: nowrap;
+}
+
+/* ── Empty state wrapper ──────────────────────────────────────────────────── */
+
+.emptyWrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 320px;
+}

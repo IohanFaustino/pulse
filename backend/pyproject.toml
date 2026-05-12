@@ -1,0 +1,115 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "api-extractor"
+version = "0.1.0"
+description = "Brazilian economic indicators extractor and dashboard API"
+requires-python = ">=3.12"
+dependencies = [
+    # Web framework
+    "fastapi==0.115.5",
+    "uvicorn[standard]==0.32.1",
+
+    # Database
+    "sqlalchemy[asyncio]==2.0.36",
+    "asyncpg==0.30.0",
+    "psycopg2-binary==2.9.10",  # sync driver for APScheduler SQLAlchemyJobStore
+    "alembic==1.14.0",
+
+    # Data validation and settings
+    "pydantic==2.10.3",
+    "pydantic-settings==2.7.0",
+
+    # Data processing
+    "pandas==2.2.3",
+    "numpy==2.2.0",
+
+    # HTTP client
+    "httpx==0.28.1",
+
+    # Retry logic
+    "tenacity==9.0.0",
+
+    # Scheduling
+    "apscheduler==3.10.4",
+
+    # Cache
+    "redis==5.2.1",
+
+    # External data source (B3 / Yahoo Finance)
+    "yfinance==1.3.0",
+
+    # Logging
+    "loguru==0.7.3",
+
+    # HTML parsing (calendar scrapers — Phase 6)
+    "beautifulsoup4==4.12.3",
+    "lxml==5.3.0",
+    "openpyxl==3.1.5",  # Parse ANBIMA bulk-history XLSX files from data.anbima.com.br
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testing
+    "pytest==8.3.4",
+    "pytest-asyncio==0.24.0",
+    "pytest-cov==6.0.0",
+    "httpx==0.28.1",  # for AsyncClient in tests
+
+    # Code quality
+    "ruff==0.8.4",
+    "black==24.10.0",
+    "mypy==1.13.0",
+
+    # Type stubs
+    "types-redis==4.6.0.20241004",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/api_extractor"]
+
+# ── Ruff ──────────────────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "N",    # pep8-naming
+    "S",    # bandit (security)
+    "ANN",  # flake8-annotations (partial)
+]
+ignore = [
+    "S101",    # use of assert (ok in tests)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "ANN"]
+
+# ── Black ─────────────────────────────────────────────────────────────────────
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+# ── MyPy ──────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+exclude = ["alembic/", "tests/"]
+
+# ── Pytest ────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-v --tb=short"

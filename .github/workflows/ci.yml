@@ -1,0 +1,432 @@
+# .github/workflows/ci.yml
+# Main CI pipeline: runs on every push to main and on every pull request.
+#
+# Job graph (all independent jobs run in parallel by default):
+#
+#   ┌─────────────────┐   ┌──────────────────┐   ┌──────────────┐
+#   │  backend-tests  │   │ frontend-tests   │   │    lint      │
+#   └────────┬────────┘   └────────┬─────────┘   └──────┬───────┘
+#            │                     │                     │
+#            └──────────────┬──────┘                     │
+#                           ▼                            │
+#                    ┌─────────────┐                     │
+#                    │docker-build │◄────────────────────┘
+#                    └─────────────┘
+#   ┌─────────────────┐
+#   │ security-scan   │  (runs independently, does not block merge)
+#   └─────────────────┘
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Cancel any in-progress run for the same branch/PR when a newer commit is pushed.
+# This avoids wasting runner minutes on stale commits.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Minimal default permissions; jobs that need more declare it explicitly.
+permissions:
+  contents: read
+
+env:
+  # Shared across jobs — keeps values DRY and easy to bump.
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
+  TIMESCALE_IMAGE: "timescale/timescaledb:2.26.4-pg16"
+  REGISTRY: ghcr.io
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # backend-tests
+  # Purpose: run the full pytest suite with real Postgres+TimescaleDB and Redis
+  # service containers so that integration tests work identically to production.
+  # ────────────────────────────────────────────────────────────────────────────
+  backend-tests:
+    name: Backend Tests (Python ${{ env.PYTHON_VERSION }})
+    runs-on: ubuntu-latest
+
+    # Only run when backend/ files change — avoids running slow DB tests for
+    # frontend-only PRs.  push to main always runs all jobs regardless.
+    if: |
+      github.event_name == 'push' ||
+      contains(toJson(github.event.pull_request.changed_files), 'backend/')
+
+    # Path filter using paths-filter is not available here; we use the
+    # simpler approach of a dedicated paths check done via `if:`.
+    # For true per-file-path filtering, see the separate filter job approach.
+    # We rely on the path-based trigger defined in the on: block for PRs below.
+
+    services:
+      # TimescaleDB — matches the exact image used in docker-compose.yml so
+      # tests exercise the hypertable extension.
+      postgres:
+        image: timescale/timescaledb:2.26.4-pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: api_extractor_test
+        ports:
+          - 5432:5432
+        # TimescaleDB needs extra time to load the extension on first start.
+        options: >-
+          --health-cmd "pg_isready -U postgres -d api_extractor_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 30s
+
+      # Redis 7 — same version as docker-compose.yml.
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # actions/setup-python@v5 includes pip caching; we cache based on the
+      # lock file (uv.lock) for reproducible installs.
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # Cache pip's download cache (not the venv) so repeated runs only
+      # download packages that have changed.
+      - name: Cache pip downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          # Key combines OS, Python version, and the lock file hash.
+          key: pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('backend/pyproject.toml', 'backend/uv.lock') }}
+          restore-keys: |
+            pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-
+
+      # Install all runtime + dev dependencies from pyproject.toml.
+      # We use pip install -e ".[dev]" to mirror the Dockerfile's install command.
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      # Create TimescaleDB extension before tests run — mirrors infra/postgres/init.sql.
+      # Tests use a separate api_extractor_test database to avoid polluting dev data.
+      - name: Bootstrap TimescaleDB extension
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d api_extractor_test \
+            -c "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;"
+
+      # Run the full test suite with coverage.
+      # --cov=src: measure coverage only on application code (not tests themselves).
+      # --cov-report=xml: machine-readable output consumed by the upload step.
+      # -q: quiet output to keep logs readable; CI still captures failures.
+      - name: Run pytest with coverage
+        working-directory: backend
+        env:
+          # Provide service connection strings to the application settings layer.
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/api_extractor_test
+          REDIS_URL: redis://localhost:6379/0
+          # Prevent the scheduler from starting in test mode.
+          SCHEDULER_ENABLED: "false"
+          # Keep logs clean in CI.
+          LOG_LEVEL: "WARNING"
+        run: |
+          pytest tests/ -q \
+            --cov=src \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing \
+            --tb=short
+
+      # Upload the coverage XML so it can be consumed by a coverage service
+      # (e.g. Codecov) or inspected manually from the Actions run summary.
+      - name: Upload backend coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()  # Upload even on test failure to diagnose coverage gaps.
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
+          retention-days: 14
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # frontend-tests
+  # Purpose: run Vitest unit tests and TypeScript type-checking for the React app.
+  # ────────────────────────────────────────────────────────────────────────────
+  frontend-tests:
+    name: Frontend Tests (Node ${{ env.NODE_VERSION }})
+    runs-on: ubuntu-latest
+
+    # Only fire when frontend/ files change (same rationale as backend-tests).
+    if: |
+      github.event_name == 'push' ||
+      contains(toJson(github.event.pull_request.changed_files), 'frontend/')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # Cache node_modules based on package-lock.json hash.
+      # Using cache@v4 explicitly (rather than setup-node's built-in cache) so
+      # we can share the same cache key structure used in docker-build.
+      - name: Cache npm packages
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        # ci (clean install) respects package-lock.json exactly — safer than install.
+        run: npm ci
+
+      # Vitest in run mode (non-watch) — exits with non-zero on failure.
+      # Vitest uses v8 coverage provider configured in vite.config.ts.
+      - name: Run Vitest tests
+        working-directory: frontend
+        run: npm run test
+
+      # Run TypeScript compiler in no-emit mode to catch type errors without
+      # needing to produce build output.
+      - name: TypeScript type check
+        working-directory: frontend
+        run: npm run typecheck
+
+      # Upload any coverage output produced by Vitest if it exists.
+      - name: Upload frontend coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          # Vitest outputs to coverage/ by default; skip if not present.
+          path: frontend/coverage/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # lint
+  # Purpose: fast code-quality checks that run on EVERY push/PR regardless of
+  # which paths changed — catching style regressions early.
+  # ────────────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    # Lint always runs — no path filter.
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Python linting (ruff) ──────────────────────────────────────────────
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip downloads (lint)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-lint-${{ runner.os }}-${{ hashFiles('backend/pyproject.toml') }}
+          restore-keys: |
+            pip-lint-${{ runner.os }}-
+
+      # Install only the dev extras — ruff is in [project.optional-dependencies.dev].
+      - name: Install ruff
+        working-directory: backend
+        run: pip install "ruff==0.8.4"
+
+      # ruff check with no auto-fix: any violation fails the job.
+      - name: Ruff lint (backend)
+        working-directory: backend
+        run: ruff check src/
+
+      # ruff format --check verifies formatting without modifying files.
+      - name: Ruff format check (backend)
+        working-directory: backend
+        run: ruff format --check src/
+
+      # ── TypeScript / Prettier (frontend) ──────────────────────────────────
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache npm packages (lint)
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+
+      - name: Install frontend dependencies (lint)
+        working-directory: frontend
+        run: npm ci
+
+      # tsc --noEmit: type errors fail CI without emitting build artifacts.
+      - name: TypeScript check (frontend)
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      # Prettier --check: exits non-zero if any file is not formatted.
+      # We check all relevant extensions; add/remove as needed.
+      - name: Prettier format check (frontend)
+        working-directory: frontend
+        run: npx prettier --check "src/**/*.{ts,tsx,css}"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # docker-build
+  # Purpose: verify that both Docker images build successfully.
+  # Images are NOT pushed — this is a build-integrity gate only.
+  # Pushing happens in docker-publish.yml on release tags.
+  # ────────────────────────────────────────────────────────────────────────────
+  docker-build:
+    name: Docker Build (no push)
+    runs-on: ubuntu-latest
+    # Wait for tests and lint to pass before spending time on image builds.
+    needs: [lint]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # QEMU enables multi-arch build simulation on the amd64 runner.
+      # We only build for linux/amd64 here (fast); multi-arch happens in publish.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # buildx provides BuildKit features: inline cache, multi-stage parallelism.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build the backend (api) image.
+      # cache-from/to: export layer cache to GitHub Actions cache so subsequent
+      # runs reuse unchanged layers (especially the deps stage).
+      - name: Build backend (api) image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          tags: api-extractor-api:ci
+          # Use BuildKit inline cache stored in the GitHub Actions cache backend.
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+          # Build only the runtime target — same as production.
+          target: runtime
+
+      # Build the frontend (web) image using a Dockerfile that should exist at
+      # frontend/Dockerfile (production Nginx-based build, not the dev Node server).
+      # If that Dockerfile doesn't exist yet, this step is skipped gracefully.
+      - name: Build frontend (web) image
+        uses: docker/build-push-action@v6
+        # continue-on-error lets the pipeline pass until frontend/Dockerfile exists.
+        continue-on-error: true
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          tags: api-extractor-web:ci
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # security-scan
+  # Purpose: detect secrets, known CVEs in container layers, and vulnerable
+  # Python/JS packages. Runs independently so it doesn't block test jobs.
+  # continue-on-error on npm audit because audit exits non-zero even for
+  # moderate-severity advisories that may not be exploitable in this context.
+  # ────────────────────────────────────────────────────────────────────────────
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    # Security scanning runs independently and does not block other jobs.
+    # If a critical finding is found, reviewers can act on it without blocking CI.
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # gitleaks needs full history to detect secrets in older commits.
+          fetch-depth: 0
+
+      # ── Gitleaks: secret detection ─────────────────────────────────────────
+      # Scans the entire repository history for accidentally committed secrets.
+      - name: Run gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_LICENSE is only needed for private repos with the paid plan.
+          # For public repos, omit it.
+
+      # ── Trivy: filesystem vulnerability scan ──────────────────────────────
+      # Scans source files and lock files for known CVEs without building images.
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          # HIGH and CRITICAL only — avoids noise from LOW/MEDIUM during dev.
+          severity: HIGH,CRITICAL
+          # exit-code 1 would fail the job; keep it 0 so we get a report even
+          # when vulnerabilities exist (reviewers are alerted via the artifact).
+          exit-code: "0"
+          format: table
+
+      # ── pip-audit: Python dependency CVE check ─────────────────────────────
+      - name: Set up Python ${{ env.PYTHON_VERSION }} (security)
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      # pip-audit checks installed packages against the OSV and PyPI advisory DBs.
+      - name: Run pip-audit (backend deps)
+        working-directory: backend
+        # Install deps first so pip-audit can inspect the resolved dependency tree.
+        run: |
+          pip install -e ".[dev]" --quiet
+          pip-audit --desc on
+
+      # ── npm audit: JS dependency CVE check ───────────────────────────────
+      - name: Set up Node ${{ env.NODE_VERSION }} (security)
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install frontend dependencies (security)
+        working-directory: frontend
+        run: npm ci
+
+      # npm audit exits non-zero for any vulnerability including moderate.
+      # continue-on-error: true prevents this from blocking the run while still
+      # surfacing the report in logs for human review.
+      - name: Run npm audit (frontend deps)
+        working-directory: frontend
+        continue-on-error: true
+        run: npm audit --audit-level=high

@@ -1,0 +1,25 @@
+# .github/ISSUE_TEMPLATE/config.yml
+# Controls which issue templates are available and adds contact links.
+# Setting blank_issues_enabled: false forces users to use a template,
+# which improves issue quality and reduces triage overhead.
+
+blank_issues_enabled: false
+
+contact_links:
+  # Link to the project documentation for users who need help but aren't
+  # reporting a bug or requesting a feature.
+  - name: Documentacao / Documentation
+    url: https://github.com/placeholder/api-extractor/tree/main/docs
+    about: >
+      Consulte a documentacao antes de abrir uma issue.
+      Check the documentation before opening an issue.
+
+  # GitHub Discussions is the preferred channel for questions, ideas, and
+  # general conversation — keeps Issues focused on actionable work items.
+  # NOTE: Discussions must be enabled in the repository settings for this link
+  # to work. If Discussions are not enabled, remove this entry.
+  - name: Perguntas e Discussoes / Q&A and Discussions
+    url: https://github.com/placeholder/api-extractor/discussions
+    about: >
+      Use as Discussoes para perguntas gerais e troca de ideias.
+      Use Discussions for general questions and idea exchange.

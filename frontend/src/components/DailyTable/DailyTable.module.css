@@ -1,0 +1,240 @@
+/**
+ * DailyTable styles — CSS Modules
+ * Design tokens only. Touch target ≥ 44px enforced on rows.
+ */
+
+/* ── Section shell ────────────────────────────────────────────────────────── */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  border-top: 1px solid var(--bg-deep);
+  padding-top: var(--space-8);
+  margin-top: var(--space-6);
+}
+
+/* ── Section header ───────────────────────────────────────────────────────── */
+
+.sectionHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sectionTitle {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.55;
+  margin: 0;
+}
+
+.sectionSub {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--ink);
+  opacity: 0.4;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+/* ── Skeleton rows ────────────────────────────────────────────────────────── */
+
+.skeletonRows {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.skeletonRow {
+  height: 44px;
+  background: var(--bg-deep);
+  border-radius: var(--radius-sm);
+  animation: shimmer 1.4s ease infinite alternate;
+}
+
+@keyframes shimmer {
+  from { opacity: 0.6; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonRow {
+    animation: none;
+  }
+}
+
+/* ── Table wrapper ────────────────────────────────────────────────────────── */
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+/* ── Table ────────────────────────────────────────────────────────────────── */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+}
+
+/* ── Table header ─────────────────────────────────────────────────────────── */
+
+.th {
+  background: var(--bg-deep);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.55;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-default);
+  user-select: none;
+}
+
+/* Sortable header cells — cursor pointer for code + date cols */
+.th[aria-sort] {
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.th[aria-sort]:hover {
+  opacity: 0.85;
+}
+
+/* Active sort column — slightly more opaque */
+.thActive {
+  opacity: 0.8;
+}
+
+.sortIndicator {
+  margin-left: var(--space-1);
+  font-size: 0.6875rem;
+  opacity: 0.7;
+}
+
+/* ── Table rows ───────────────────────────────────────────────────────────── */
+
+.row {
+  min-height: 44px;        /* touch target */
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 100ms ease;
+  outline: none;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row:hover {
+  background: var(--surface-hover);
+}
+
+.row:focus-visible {
+  background: var(--accent-bg);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* ── Table cells ──────────────────────────────────────────────────────────── */
+
+.td,
+.tdCode,
+.tdDot {
+  padding: var(--space-3) var(--space-3);
+  vertical-align: middle;
+}
+
+.tdCode {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: var(--space-4);
+}
+
+/* Código column */
+.code {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--navy);
+  white-space: nowrap;
+}
+
+.name {
+  font-size: 0.6875rem;
+  color: var(--ink);
+  opacity: 0.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+/* Fonte column */
+.source {
+  font-size: 0.75rem;
+  color: var(--ink);
+  opacity: 0.65;
+}
+
+/* Última coleta column */
+.datetime {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink);
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.relative {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--ink);
+  opacity: 0.4;
+  white-space: nowrap;
+}
+
+/* Status dot column */
+.tdDot {
+  text-align: center;
+  width: 2.5rem;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink);
+  opacity: 0.25;
+  flex-shrink: 0;
+}
+
+.dot[data-status='fresh'] {
+  background: var(--up);
+  opacity: 1;
+}
+
+.dot[data-status='stale'] {
+  background: var(--amber);
+  opacity: 1;
+}
+
+.dot[data-status='failed'] {
+  background: var(--down);
+  opacity: 1;
+}

@@ -1,0 +1,54 @@
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Grid lines */
+.gridLine {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+}
+
+/* Polyline for line + area formats */
+.line {
+  fill: none;
+  stroke: var(--accent-2);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Area fill */
+.area {
+  fill: var(--accent-2);
+  opacity: 0.18;
+}
+
+/* Bar rectangles */
+.bar {
+  fill: var(--accent-2);
+  rx: 2px;
+}
+
+/* Terminal dot */
+.dot {
+  fill: var(--accent-2);
+}
+
+/* Axis date labels */
+.axisLabel {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  fill: var(--ink);
+  opacity: 0.45;
+  letter-spacing: 0.01em;
+}
+
+/* No-data placeholder text */
+.noData {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  fill: var(--ink);
+  opacity: 0.35;
+}

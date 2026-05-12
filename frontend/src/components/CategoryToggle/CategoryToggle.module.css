@@ -1,0 +1,129 @@
+/* ── Wrapper — stacked column so chips appear below pill ───────────────────── */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  position: relative;
+}
+
+/* ── Pill trigger ─────────────────────────────────────────────────────────── */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--chip-selected-fg);
+  background: var(--chip-selected-bg);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-4);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+  white-space: nowrap;
+}
+
+.pill:hover {
+  background: var(--accent-2);
+}
+
+.chevron {
+  display: inline-block;
+  font-style: normal;
+  font-size: 0.75rem;
+  transition: transform var(--duration-sidebar) var(--ease-sidebar);
+  line-height: 1;
+}
+
+.chevron.open {
+  transform: rotate(90deg);
+}
+
+/* ── Chip row — anchored BELOW the pill via absolute positioning ──────────── */
+/* Absolute layout keeps the parent toolbar row stable: the pill stays on its
+   original row instead of being pushed when chips render. */
+
+.chipRow {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  /* Explicit width so chips wrap into a multi-column grid instead of
+     stacking 1-per-line at the pill's content width. */
+  width: min(560px, calc(100vw - var(--space-8) * 2));
+  animation: chipRowEnter 180ms ease both;
+}
+
+@keyframes chipRowEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chipRow {
+    animation: none;
+  }
+}
+
+/* Each chip fades/slides in with stagger via inline animation-delay */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  background: var(--bg-deep);
+  color: var(--ink);
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  /* Per-chip entrance: slide from below */
+  animation: chipEnter 140ms ease both;
+}
+
+@keyframes chipEnter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip {
+    animation: none;
+  }
+}
+
+.chip:hover {
+  background: var(--bg);
+  border-color: var(--accent-3);
+}
+
+.chip.selected {
+  background: var(--chip-selected-bg);
+  color: var(--chip-selected-fg);
+  border-color: var(--chip-selected-border);
+}

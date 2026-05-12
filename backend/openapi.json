@@ -1,0 +1,1274 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API Extractor",
+    "description": "Brazilian economic indicators extraction, storage, and dashboard API. 25 macro indicators from BCB SGS, IBGE SIDRA, and B3/Yahoo Finance. Supports on-demand transforms, pinned dashboards, and release calendars.",
+    "version": "0.5.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local development"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "System health + per-series freshness",
+        "description": "Returns the overall health status and a list of all 25 series with their current freshness state (fresh | stale | failed) and the timestamp of the last successful extraction. The frontend sidebar uses this to display the sync indicator.",
+        "operationId": "get_health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/series": {
+      "get": {
+        "tags": [
+          "series"
+        ],
+        "summary": "List all economic indicator series",
+        "description": "Returns all 25 configured series with their metadata and current extraction status. Optionally filter by category (e.g. 'Inflação', 'Juros', 'Câmbio', 'Mercado', 'Atividade', 'Trabalho', 'Fiscal', 'Externo').",
+        "operationId": "list_series_series_get",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by category name (case-sensitive, pt-BR). Omit to return all.",
+              "title": "Category"
+            },
+            "description": "Filter by category name (case-sensitive, pt-BR). Omit to return all."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Series list returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeriesListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/series/{code}": {
+      "get": {
+        "tags": [
+          "series"
+        ],
+        "summary": "Get single series metadata",
+        "description": "Returns full metadata for one economic indicator series, including source information, frequency, unit, and current extraction status. Used by the Metadados dossier page.",
+        "operationId": "get_series_series__code__get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Series metadata returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeriesRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Series code not found."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/series/{code}/observations": {
+      "get": {
+        "tags": [
+          "series"
+        ],
+        "summary": "Get raw observations for a series",
+        "description": "Returns stored time-series observations for the given series. Supports optional date range filtering via `from` and `to` (ISO-8601). Results are ordered by observed_at ascending. Maximum 5000 rows returned per request (default 500). Decimal values stored in Postgres are returned as float64.",
+        "operationId": "get_observations_series__code__observations_get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start date (inclusive). ISO-8601: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.",
+              "title": "From"
+            },
+            "description": "Start date (inclusive). ISO-8601: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End date (inclusive). ISO-8601: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.",
+              "title": "To"
+            },
+            "description": "End date (inclusive). ISO-8601: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "description": "Maximum rows to return. Default 500, max 5000.",
+              "default": 500,
+              "title": "Limit"
+            },
+            "description": "Maximum rows to return. Default 500, max 5000."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Observations returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Series code not found."
+          },
+          "422": {
+            "description": "Invalid date format or limit out of range."
+          }
+        }
+      }
+    },
+    "/series/{code}/transform": {
+      "post": {
+        "tags": [
+          "transform"
+        ],
+        "summary": "Apply a transform to a series",
+        "description": "Applies the requested statistical transform to all stored observations for the series. Results are cached in Redis (TTL: daily=1h, monthly=24h, quarterly=7d). Cache key includes the transform spec hash and the latest observed_at timestamp, so new observations automatically invalidate the cache. NaN positions produced by the transform are reported in `metadata.gaps`. Decimal DB values are returned as float64.",
+        "operationId": "apply_transform_series__code__transform_post",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransformRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transform applied and result returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransformResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Series code not found."
+          },
+          "422": {
+            "description": "Invalid TransformSpec: unknown op or invalid params. See spec for valid op values."
+          },
+          "503": {
+            "description": "Transform computation failed (e.g. numeric overflow)."
+          }
+        }
+      }
+    },
+    "/releases": {
+      "get": {
+        "tags": [
+          "releases"
+        ],
+        "summary": "List release calendar events",
+        "description": "Returns scheduled and realized release events for economic indicators. Filter by `month` (YYYY-MM format) and/or `category` (pt-BR category name). Daily-frequency series are excluded from the calendar per FR-6.7. Events with scheduled_for in the past will have status='realized'; future events will have status='expected'.",
+        "operationId": "list_releases_releases_get",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by calendar month in YYYY-MM format (e.g. '2026-05').",
+              "examples": [
+                "2026-05"
+              ],
+              "title": "Month"
+            },
+            "description": "Filter by calendar month in YYYY-MM format (e.g. '2026-05')."
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by series category (pt-BR). E.g. 'Inflação', 'Juros', 'Câmbio', 'Mercado', 'Atividade', 'Trabalho', 'Fiscal', 'Externo'.",
+              "title": "Category"
+            },
+            "description": "Filter by series category (pt-BR). E.g. 'Inflação', 'Juros', 'Câmbio', 'Mercado', 'Atividade', 'Trabalho', 'Fiscal', 'Externo'."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Release events returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid month format. Use YYYY-MM."
+          }
+        }
+      }
+    },
+    "/user_prefs": {
+      "get": {
+        "tags": [
+          "user_prefs"
+        ],
+        "summary": "Get user preferences",
+        "description": "Returns the current user preferences including pinned series, per-card transform specs, and recently viewed series codes. In single-user v1, always returns the default user row (id=1). Returns an empty state (no pins, no transforms, empty recents) on first call.",
+        "operationId": "get_user_prefs_user_prefs_get",
+        "responses": {
+          "200": {
+            "description": "User preferences returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPrefsRead"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "user_prefs"
+        ],
+        "summary": "Update user preferences (partial)",
+        "description": "Partial update of user preferences. All body fields are optional — omitting a field leaves it unchanged.\n\n**Pin management:** Use `add_pins` and `remove_pins` lists. add_pins is idempotent (already-pinned series are ignored). Removing a pin also removes its card_transform.\n\n**card_transforms:** Map of series_code → TransformSpec dict. Set value to null to remove the transform and revert to 'level'. Only listed series_codes are updated.\n\n**recents:** Full replacement list (max 3 entries kept).\n\nReturns the complete updated UserPrefsRead after applying all changes.",
+        "operationId": "update_user_prefs_user_prefs_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPrefsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "User preferences updated and returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPrefsRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "One or more series codes in add_pins not found."
+          },
+          "422": {
+            "description": "Invalid body shape."
+          }
+        }
+      }
+    },
+    "/admin/extract/{code}": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Manually trigger extraction for a series",
+        "description": "Triggers an immediate extraction run for the given series code. Fetches new observations from the configured upstream source (BCB SGS, IBGE SIDRA, or Yahoo Finance/B3), upserts them into the database, and updates series.status and last_success_at. Incremental: fetches since last_success_at if set, else full backfill. Returns outcome with count of inserted/updated observations. Note: No authentication required in v1 (single-user local deployment). LIVE NETWORK CALL — runs against real upstream APIs.",
+        "operationId": "trigger_extraction_admin_extract__code__post",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Extraction completed (check status field for success/failure).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionResultResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Series code not found."
+          },
+          "422": {
+            "description": "Series source cannot be mapped to a known adapter."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CardTransformRead": {
+        "properties": {
+          "series_code": {
+            "type": "string",
+            "title": "Series Code",
+            "description": "Series code this transform applies to."
+          },
+          "transform_spec": {
+            "type": "object",
+            "title": "Transform Spec",
+            "description": "TransformSpec dict, e.g. {\"op\": \"yoy\", \"params\": {}}."
+          }
+        },
+        "type": "object",
+        "required": [
+          "series_code",
+          "transform_spec"
+        ],
+        "title": "CardTransformRead",
+        "description": "Active transform spec for a pinned Painel card."
+      },
+      "ExtractionResultResponse": {
+        "properties": {
+          "series_code": {
+            "type": "string",
+            "title": "Series Code",
+            "description": "Series code that was extracted."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Outcome: 'success' | 'failed'. Mirrors series.status after the run."
+          },
+          "observations_upserted": {
+            "type": "integer",
+            "title": "Observations Upserted",
+            "description": "Number of observation rows inserted or updated."
+          },
+          "latest_observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Observed At",
+            "description": "Timestamp of the most recent observation after this extraction. Null on failure."
+          },
+          "extraction_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Extraction At",
+            "description": "UTC timestamp when the extraction was triggered."
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message if the extraction failed. Null on success."
+          }
+        },
+        "type": "object",
+        "required": [
+          "series_code",
+          "status",
+          "observations_upserted",
+          "extraction_at"
+        ],
+        "title": "ExtractionResultResponse",
+        "description": "Response schema for POST /admin/extract/{code}.\n\nReports the outcome of a manual extraction trigger."
+      },
+      "GapRecord": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "description": "ISO-8601 date string (YYYY-MM-DD) of the gap."
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "description": "Reason for the gap. Currently always 'missing_upstream'.",
+            "default": "missing_upstream"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date"
+        ],
+        "title": "GapRecord",
+        "description": "A single NaN gap detected in a transformed series."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Aggregate status: 'ok' if all series are fresh, 'degraded' otherwise."
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/SeriesFreshness"
+            },
+            "type": "array",
+            "title": "Series",
+            "description": "Per-series freshness list ordered by category then code."
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Checked At",
+            "description": "UTC timestamp when this health check was computed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "checked_at"
+        ],
+        "title": "HealthResponse",
+        "description": "Response schema for GET /health.\n\nSummarises overall system health and per-series freshness."
+      },
+      "ObservationListResponse": {
+        "properties": {
+          "series_code": {
+            "type": "string",
+            "title": "Series Code",
+            "description": "Series code these observations belong to."
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ObservationRead"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Observations ordered by observed_at ascending."
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total rows matching the query before limit was applied."
+          },
+          "returned": {
+            "type": "integer",
+            "title": "Returned",
+            "description": "Number of rows in this response."
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Effective limit applied (max 5000, default 500)."
+          },
+          "from_dt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Dt",
+            "description": "Lower bound applied (inclusive), if provided."
+          },
+          "to_dt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Dt",
+            "description": "Upper bound applied (inclusive), if provided."
+          }
+        },
+        "type": "object",
+        "required": [
+          "series_code",
+          "items",
+          "total",
+          "returned",
+          "limit"
+        ],
+        "title": "ObservationListResponse",
+        "description": "Response schema for GET /series/{code}/observations."
+      },
+      "ObservationRead": {
+        "properties": {
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At",
+            "description": "UTC timestamp of the observation (timezone-aware ISO-8601)."
+          },
+          "value": {
+            "type": "number",
+            "title": "Value",
+            "description": "Numeric value as float64. Source precision: Numeric(20, 6)."
+          },
+          "ingested_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ingested At",
+            "description": "UTC timestamp when this row was first written to the database."
+          }
+        },
+        "type": "object",
+        "required": [
+          "observed_at",
+          "value",
+          "ingested_at"
+        ],
+        "title": "ObservationRead",
+        "description": "A single time-series data point.\n\nNote: `value` is returned as float (converted from Decimal at the DB\nboundary). Precision is preserved to 6 decimal places by the DB schema."
+      },
+      "PinRead": {
+        "properties": {
+          "series_code": {
+            "type": "string",
+            "title": "Series Code",
+            "description": "Pinned series code."
+          },
+          "order": {
+            "type": "integer",
+            "title": "Order",
+            "description": "Display order in Painel (0-based ascending)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "series_code",
+          "order"
+        ],
+        "title": "PinRead",
+        "description": "A pinned series entry."
+      },
+      "ReleaseListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReleaseRead"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Release events ordered by scheduled_for ascending."
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of events returned."
+          },
+          "month": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month",
+            "description": "Month filter applied, if any (YYYY-MM format)."
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category",
+            "description": "Category filter applied, if any."
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ReleaseListResponse",
+        "description": "Response schema for GET /releases."
+      },
+      "ReleaseRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Surrogate primary key."
+          },
+          "series_code": {
+            "type": "string",
+            "title": "Series Code",
+            "description": "Series code this release belongs to."
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date",
+            "title": "Scheduled For",
+            "description": "Expected publication date (ISO-8601 date)."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "'expected' (future/unconfirmed) | 'realized' (past, confirmed published)."
+          },
+          "source_type": {
+            "type": "string",
+            "title": "Source Type",
+            "description": "How the date was determined: 'scraped' | 'hardcoded' | 'inferred'."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "series_code",
+          "scheduled_for",
+          "status",
+          "source_type"
+        ],
+        "title": "ReleaseRead",
+        "description": "A scheduled or realized release event for an economic indicator.\n\nDaily-frequency series are excluded from releases (FR-6.7)."
+      },
+      "SeriesFreshness": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "Series code, e.g. 'IPCA'."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "'fresh' | 'stale' | 'failed'."
+          },
+          "last_success_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Success At",
+            "description": "UTC timestamp of last successful extraction. Null if never extracted."
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "status"
+        ],
+        "title": "SeriesFreshness",
+        "description": "Freshness record for a single series, returned inside HealthResponse."
+      },
+      "SeriesListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SeriesRead"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "List of all series ordered by category then code."
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of series returned."
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "SeriesListResponse",
+        "description": "Response schema for GET /series."
+      },
+      "SeriesRead": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "Series primary key, e.g. 'IPCA'."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Human-readable display name (pt-BR)."
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "description": "Grouping category, e.g. 'Inflação', 'Juros'."
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Data source name, e.g. 'BCB SGS', 'IBGE SIDRA'."
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id",
+            "description": "Source-system identifier, e.g. '433' for BCB SGS."
+          },
+          "frequency": {
+            "type": "string",
+            "title": "Frequency",
+            "description": "Release cadence: 'daily' | 'monthly' | 'quarterly' | 'event'."
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit",
+            "description": "Unit of measure, e.g. '%', 'R$', 'pts'."
+          },
+          "first_observation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Observation",
+            "description": "Date of the earliest known observation for this series."
+          },
+          "last_extraction_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Extraction At",
+            "description": "UTC timestamp of the most recent extraction attempt."
+          },
+          "last_success_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Success At",
+            "description": "UTC timestamp of the most recent successful extraction."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Freshness status: 'fresh' | 'stale' | 'failed'."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Source-specific metadata (methodology notes, URLs, etc.)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "category",
+          "source",
+          "source_id",
+          "frequency",
+          "unit",
+          "status"
+        ],
+        "title": "SeriesRead",
+        "description": "Full metadata for a single economic indicator series.\n\nNumeric values stored as Decimal in Postgres are returned as float here."
+      },
+      "TransformMetadata": {
+        "properties": {
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/GapRecord"
+            },
+            "type": "array",
+            "title": "Gaps",
+            "description": "List of NaN positions detected after transform. Empty when no gaps."
+          },
+          "stub": {
+            "type": "boolean",
+            "title": "Stub",
+            "description": "True when the op is a stub (sa, calendar_adj) — values are level passthrough.",
+            "default": false
+          },
+          "op": {
+            "type": "string",
+            "title": "Op",
+            "description": "Transform operation applied."
+          },
+          "params": {
+            "type": "object",
+            "title": "Params",
+            "description": "Effective parameters used."
+          },
+          "cached": {
+            "type": "boolean",
+            "title": "Cached",
+            "description": "True if the result was served from Redis cache."
+          },
+          "latest_observed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Observed At",
+            "description": "ISO-8601 timestamp of the most recent observation used for cache keying."
+          }
+        },
+        "type": "object",
+        "required": [
+          "op",
+          "cached"
+        ],
+        "title": "TransformMetadata",
+        "description": "Metadata about a transform computation result."
+      },
+      "TransformRequest": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "title": "Op",
+            "description": "Transform operation identifier. One of: level, sa, calendar_adj, mom, qoq, yoy, annualized, diff, log_diff, pp, ma, ewma, accum12, stddev12, rebase, zscore, percentile."
+          },
+          "params": {
+            "type": "object",
+            "title": "Params",
+            "description": "Operation parameters. op-specific keys: ma → {window: int (default 12)}, ewma → {span: int (default 12)}, rebase → {base: float (default 100.0)}. All other ops ignore params."
+          }
+        },
+        "type": "object",
+        "required": [
+          "op"
+        ],
+        "title": "TransformRequest",
+        "description": "Request body for POST /series/{code}/transform."
+      },
+      "TransformResponse": {
+        "properties": {
+          "series_code": {
+            "type": "string",
+            "title": "Series Code",
+            "description": "Series code the transform was applied to."
+          },
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/TransformValuePoint"
+            },
+            "type": "array",
+            "title": "Values",
+            "description": "Transformed time series ordered by date ascending."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/TransformMetadata",
+            "description": "Computation metadata including gap list."
+          }
+        },
+        "type": "object",
+        "required": [
+          "series_code",
+          "values",
+          "metadata"
+        ],
+        "title": "TransformResponse",
+        "description": "Response schema for POST /series/{code}/transform."
+      },
+      "TransformValuePoint": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "description": "ISO-8601 date string (YYYY-MM-DD)."
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value",
+            "description": "Transformed float value. null where the transform produced NaN."
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "value"
+        ],
+        "title": "TransformValuePoint",
+        "description": "A single (date, value) point in a transform result."
+      },
+      "UserPrefsRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Always 1 in single-user v1 deployment."
+          },
+          "pins": {
+            "items": {
+              "$ref": "#/components/schemas/PinRead"
+            },
+            "type": "array",
+            "title": "Pins",
+            "description": "Pinned series ordered by display order."
+          },
+          "card_transforms": {
+            "items": {
+              "$ref": "#/components/schemas/CardTransformRead"
+            },
+            "type": "array",
+            "title": "Card Transforms",
+            "description": "Active transform spec per pinned card. Absent entries default to 'level'."
+          },
+          "recents": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recents",
+            "description": "Recently viewed series codes, most recent first (max 3)."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "UTC timestamp of last modification."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "UserPrefsRead",
+        "description": "Full user preferences response.\n\nRepresents the single-user state including pinned series,\nper-card transform specs, and recently viewed series codes."
+      },
+      "UserPrefsUpdate": {
+        "properties": {
+          "add_pins": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add Pins",
+            "description": "Series codes to add to pins (idempotent — already-pinned codes are ignored)."
+          },
+          "remove_pins": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remove Pins",
+            "description": "Series codes to remove from pins. Unpinning also removes the card transform."
+          },
+          "card_transforms": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Card Transforms",
+            "description": "Map of series_code → TransformSpec dict (or null to remove). Only listed series are updated; others are unchanged."
+          },
+          "recents": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recents",
+            "description": "Full replacement of the recents list (max 3 entries kept)."
+          }
+        },
+        "type": "object",
+        "title": "UserPrefsUpdate",
+        "description": "Partial update body for PATCH /user_prefs.\n\nAll fields are optional — unset fields are unchanged.\n\nPins use add/remove lists rather than full replacement to prevent\naccidental data loss on concurrent edits.\n\ncard_transforms is a mapping from series_code to TransformSpec dict\n(or null to remove the transform and revert to level)."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "health",
+      "description": "System health and per-series freshness status."
+    },
+    {
+      "name": "series",
+      "description": "Economic indicator series metadata, observations, and raw data access. 25 Brazilian macro indicators: IPCA, SELIC, CDI, PIB, Ibovespa, etc."
+    },
+    {
+      "name": "transform",
+      "description": "On-demand statistical transforms computed server-side via pandas. Supports 17 ops: level, MoM, YoY, MA, EWMA, z-score, rebase, and more. Results cached in Redis (TTL per series frequency)."
+    },
+    {
+      "name": "releases",
+      "description": "Economic indicator release calendar. Upcoming (E) and realized (R) events from IBGE, BCB, and hardcoded schedules."
+    },
+    {
+      "name": "user_prefs",
+      "description": "User preferences: pinned series for Painel, per-card transform specs, and recently viewed series. Persisted in Postgres (single-user, id=1)."
+    },
+    {
+      "name": "admin",
+      "description": "Administrative operations. Manual extraction trigger (live network call). No authentication required in v1 single-user deployment."
+    }
+  ]
+}

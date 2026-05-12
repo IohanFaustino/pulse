@@ -1,0 +1,157 @@
+/* ── Strip container ──────────────────────────────────────────────────────── */
+
+.strip {
+  /*
+   * 30-day scrollable strip.
+   * Each cell is min 84px wide — at typical sidebar+padding layout this
+   * renders ~10 cells visible; the rest scroll horizontally.
+   */
+  display: grid;
+  grid-template-columns: repeat(30, minmax(84px, 1fr));
+  gap: var(--space-1);
+  /* Horizontal scroll — always show scrollbar so users know it's scrollable */
+  overflow-x: auto;
+  /* Firefox: always-visible scrollbar track */
+  scrollbar-width: auto;
+  scrollbar-color: var(--bg-deep) var(--bg);
+  /* Scroll snapping: snap to each cell's start for crisp keyboard/touch UX */
+  scroll-snap-type: x mandatory;
+  /* Thin bottom padding so scrollbar doesn't overlap last chip */
+  padding-bottom: var(--space-2);
+}
+
+/* Webkit: styled scrollbar — always visible, 8px height */
+.strip::-webkit-scrollbar {
+  height: 8px;
+}
+
+.strip::-webkit-scrollbar-track {
+  background: var(--bg);
+  border-radius: var(--radius-pill);
+}
+
+.strip::-webkit-scrollbar-thumb {
+  background: var(--bg-deep);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--bg);
+}
+
+/* ── Day column ───────────────────────────────────────────────────────────── */
+
+.day {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  /* 8px horizontal, 8px vertical — minimum comfortable density */
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  /* Consistent height across all day cells */
+  min-height: 96px;
+  /* Right border for visual column separation */
+  border-right: 1px solid var(--bg-deep);
+  /* Snap each cell to left edge on scroll */
+  scroll-snap-align: start;
+}
+
+/* Remove right border on the last cell — no dangling line */
+.day:last-child {
+  border-right: none;
+}
+
+/* Today: navy outline per §5 today-highlight */
+.day.today {
+  border: 1.5px solid var(--navy);
+  /* Slightly elevated surface for today */
+  background: var(--surface-hover);
+}
+
+/* Weekend: dimmed so work-days draw the eye */
+.day.weekend {
+  opacity: 0.7;
+}
+
+/* ── Day header: weekday abbreviation + day number ────────────────────────── */
+
+.dayHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dayWeekday {
+  font-family: var(--font-mono);
+  /* 9px — small caps label, visible but not competing with number */
+  font-size: 0.5625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  opacity: 0.4;
+  line-height: 1;
+}
+
+.dayNumber {
+  font-family: var(--font-serif);
+  /* 18px — the primary anchor for each cell */
+  font-size: 1.125rem;
+  color: var(--navy);
+  line-height: 1;
+}
+
+/* Today's day number gets accent colour for instant recognition */
+.day.today .dayNumber {
+  color: var(--accent-3);
+}
+
+/* ── Release chips ────────────────────────────────────────────────────────── */
+
+.releases {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  /* Allow chips to stack without overflowing — truncate gracefully */
+  overflow: hidden;
+}
+
+.releaseChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  /* 4px vertical / 4px horizontal — compact but distinct */
+  padding: 0.125rem var(--space-1);
+  border-radius: var(--radius-sm);
+  line-height: 1;
+  /* Truncate long codes with ellipsis */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.releaseChip.expected {
+  background: var(--up-bg);
+  color: var(--up);
+}
+
+.releaseChip.realized {
+  background: var(--down-bg);
+  color: var(--down);
+}
+
+.releaseStatus {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  /* Don't let the status letter shrink */
+  flex-shrink: 0;
+}
+
+/* ── Empty day ────────────────────────────────────────────────────────────── */
+
+.emptyDay {
+  /* Placeholder so all cells maintain min-height even with no releases */
+  flex: 1;
+}

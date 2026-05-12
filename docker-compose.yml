@@ -1,0 +1,110 @@
+services:
+  # ── Postgres 16 + TimescaleDB ─────────────────────────────────────────────
+  postgres:
+    image: timescale/timescaledb:2.26.4-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-api_extractor}
+      TZ: ${TZ:-America/Sao_Paulo}
+    ports:
+      # Host port 5433 avoids conflict with other Postgres instances on this machine.
+      # Container-internal port remains 5432; DATABASE_URL uses service name "postgres".
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01-timescaledb.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-api_extractor}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Redis 7 ───────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1
+      --loglevel notice
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "PING"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # ── FastAPI / uvicorn ─────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TZ: ${TZ:-America/Sao_Paulo}
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source and tests for hot-reload and in-container test runs.
+      - ./backend/src:/app/src:ro
+      - ./backend/tests:/app/tests:ro
+      # Phase 1: Alembic migrations and seed data.
+      - ./backend/alembic:/app/alembic:ro
+      - ./backend/alembic.ini:/app/alembic.ini:ro
+      - ./backend/data:/app/data:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Vite dev server (Phase 7 scaffold) ───────────────────────────────────
+  web:
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: /app
+    # Phase 7: run Vite dev server with HMR exposed on all interfaces.
+    # npm install runs first so the named volume node_modules is always
+    # populated even on a fresh pull (avoids host mount shadowing).
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    environment:
+      # Proxy target used by vite.config.ts when VITE_API_URL is set.
+      # Inside Docker Compose, the FastAPI service is at http://api:8000.
+      VITE_API_URL: http://api:8000
+    ports:
+      # Host port 5174 avoids conflict with other Vite servers on this machine.
+      - "5174:5173"
+    volumes:
+      # Bind-mount frontend source for hot-module replacement.
+      - ./frontend:/app
+      # Named volume for node_modules prevents host directory from shadowing
+      # the container's installed packages (avoids Linux UID / platform issues).
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+    driver: local
+  redisdata:
+    driver: local
+  frontend_node_modules:
+    driver: local

@@ -1,0 +1,36 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.125rem var(--space-2);
+  border-radius: var(--radius-pill);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.badge.up {
+  color: var(--up);
+  background-color: var(--up-bg);
+}
+
+.badge.down {
+  color: var(--down);
+  background-color: var(--down-bg);
+}
+
+.badge.neutral {
+  color: var(--ink-muted);
+  background-color: var(--neutral-bg);
+}
+
+.arrow {
+  font-size: 0.625rem;
+  line-height: 1;
+}
+
+.value {
+  letter-spacing: -0.01em;
+}

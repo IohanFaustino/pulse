@@ -1,0 +1,299 @@
+/**
+ * Design tokens — API-extractor workspace
+ * Source: API-extractor/DOCUMENTACAO.md §8 Palette + Typography
+ *
+ * Single source of truth for colours, typography, spacing, motion.
+ * Components must consume these tokens — no raw hex / rgba in component CSS.
+ *
+ * Theme switching: <html data-theme="dark"> activates the [data-theme="dark"]
+ * block at the bottom (see App.tsx useEffect).
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ── Palette: surfaces ────────────────────────────────────────────────── */
+
+  --bg: #F2F5FA;
+  --bg-deep: #E6ECF5;
+  --surface: #FFFFFF;
+  --surface-hover: #F7F9FD;          /* subtle hover surface */
+  --surface-elevated: #FFFFFF;       /* popover / modal body */
+  --surface-subtle: rgba(11, 47, 102, 0.04);  /* zebra stripe / inert chip */
+
+  /* ── Palette: ink (text + foreground icons) ─────────────────────────── */
+
+  --ink: #0B1730;
+  --ink-muted: rgba(11, 23, 48, 0.55);
+  --ink-faint: rgba(11, 23, 48, 0.35);
+  --ink-on-accent: #FFFFFF;          /* text/icon on filled accent bg */
+  --ink-on-grafite: #FFFFFF;         /* sidebar text — dark on both themes */
+
+  /* ── Palette: borders / dividers ─────────────────────────────────────── */
+
+  --border-subtle: rgba(11, 47, 102, 0.06);
+  --border-default: rgba(11, 47, 102, 0.12);
+  --border-strong: rgba(11, 47, 102, 0.25);
+
+  /* ── Palette: brand blues ────────────────────────────────────────────── */
+
+  --accent: #1E4FBF;                 /* cobalt */
+  --accent-2: #2C7BE5;               /* azure */
+  --accent-3: #6FB8FF;               /* sky */
+  --navy: #0B2F66;                   /* navy deep */
+
+  /* Tinted accent surfaces */
+  --accent-bg: rgba(44, 123, 229, 0.08);
+  --accent-bg-strong: rgba(44, 123, 229, 0.18);
+  --accent-ring: rgba(44, 123, 229, 0.20);
+
+  /* Grafite gradient — sidebar (dark in both themes by design) */
+  --grafite-1: #050505;
+  --grafite-2: #1F2530;
+
+  /* ── Financial semantics ─────────────────────────────────────────────── */
+
+  --up: #1D7A55;
+  --up-bg: rgba(29, 122, 85, 0.10);
+  --up-border: rgba(29, 122, 85, 0.25);
+
+  --down: #C04050;
+  --down-bg: rgba(192, 64, 80, 0.10);
+  --down-border: rgba(192, 64, 80, 0.25);
+
+  /* Neutral delta chip */
+  --neutral-bg: rgba(11, 23, 48, 0.06);
+
+  /* ── Status / accent extras ──────────────────────────────────────────── */
+
+  --gold: #C8A400;                   /* pinned star */
+  --amber: #C07020;                  /* "stale" / external accounts */
+
+  /* ── Category tokens (theme-aware) ───────────────────────────────────── */
+  /* Used by lib/categoryColor.ts. Bg derived via color-mix at call site. */
+
+  --cat-inflacao: #C04050;
+  --cat-juros: #1E4FBF;
+  --cat-cambio: #2C7BE5;
+  --cat-mercado: #6FB8FF;
+  --cat-atividade: #1D7A55;
+  --cat-trabalho: #7C5CBF;
+  --cat-fiscal: #0B2F66;
+  --cat-externo: #C07020;
+  --cat-renda-fixa: #0F766E;
+  --cat-mercado-intl: #5B21B6;
+  --cat-sustentabilidade: #16A34A;
+  --cat-governanca: #7C2D12;
+
+  /* ── Scrim (modal/sheet backdrop) ────────────────────────────────────── */
+
+  --scrim: rgba(11, 23, 48, 0.45);
+
+  /* ── Skeleton shimmer ────────────────────────────────────────────────── */
+
+  --skeleton-base: rgba(230, 236, 245, 0.7);
+  --skeleton-shine: rgba(255, 255, 255, 0.92);
+
+  /* ── Typography ──────────────────────────────────────────────────────── */
+
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Cascadia Code', monospace;
+
+  /* ── Motion ──────────────────────────────────────────────────────────── */
+
+  --duration-sidebar: 320ms;
+  --ease-sidebar: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --duration-modal: 220ms;
+  --duration-scrim: 160ms;
+  --duration-chip: 18ms;
+  --duration-pulse: 2.4s;
+
+  /* ── Spacing scale (base 4px) ────────────────────────────────────────── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* ── Border radius ───────────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
+
+  /* ── Shadows ─────────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 3px rgba(11, 47, 102, 0.08);
+  --shadow-md: 0 4px 12px rgba(11, 47, 102, 0.12);
+  --shadow-lg: 0 8px 24px rgba(11, 47, 102, 0.16);
+
+  /* ── Scrollbar ───────────────────────────────────────────────────────── */
+  --scrollbar-thumb: rgba(11, 47, 102, 0.20);
+  --scrollbar-thumb-hover: rgba(11, 47, 102, 0.35);
+
+  /* Chart gridlines — slightly darker than bg in light, lighter in dark */
+  --chart-grid: rgba(11, 47, 102, 0.08);
+
+  /* Sidebar gradient — navy in light mode (brand), pure black in dark */
+  --sidebar-bg: linear-gradient(180deg, #061B3D 0%, #0B2F66 55%, #133764 100%);
+
+  /* Active nav item pill — grafite over navy in light */
+  --nav-active-bg: linear-gradient(90deg, #050505, #1F2530);
+
+  /* Selected chip / pill (CategoryToggle, Metadados chipActive) — dark
+     navy in light to read as primary; brand accent in dark so it doesn't
+     invert to white. */
+  --chip-selected-bg: var(--ink);
+  --chip-selected-fg: var(--ink-on-accent);
+  --chip-selected-border: var(--ink);
+}
+
+/* ── Dark mode overrides ──────────────────────────────────────────────────
+ *
+ * Strategy (Material/HIG): tonal lift, not pure inversion. Surfaces step up
+ * in lightness with elevation. Text uses off-white (#E5E9F0), never pure
+ * white, to reduce halation. All accent colors lifted for AA contrast on
+ * dark surfaces. Borders use white-with-alpha so they read on lifted cards.
+ *
+ * Strategy: true black-and-white grayscale. Surfaces step from pure black
+ * through near-black greys. Brand blue reserved for interactive accents
+ * only (links, focus, primary CTA) — chrome reads neutral.
+ *
+ * Verified contrast (foreground on --surface #141414):
+ *   --ink #F5F5F5          ≈ 16.5:1   AAA
+ *   --ink-muted 0.72 alpha ≈  9.0:1   AAA
+ *   --navy / hero #FFFFFF  ≈ 18.7:1   AAA
+ *   --accent-2 #6FA8FF     ≈  6.8:1   AA
+ *   --up #3DBA80           ≈  6.0:1   AA
+ *   --down #E27083         ≈  4.9:1   AA
+ */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* ── Surfaces (pure greyscale, near-black) ──────────────────────────────
+   * Elevation hierarchy (deepest → highest):
+   *   sidebar grafite #000 → page bg #121212 → table header #0A0A0A
+   *   → card surface #1C1C1C → hover #242424 → modal/popover #2A2A2A
+   * Sidebar reads as the deepest surface; cards lift visibly off the page.
+   */
+
+  --bg: #121212;                     /* page background */
+  --bg-deep: #0A0A0A;                /* gutters, table headers, deeper recess */
+  --surface: #1C1C1C;                /* cards, primary surfaces */
+  --surface-hover: #242424;          /* hover lift on cards/rows */
+  --surface-elevated: #2A2A2A;       /* popovers, modals */
+  --surface-subtle: rgba(255, 255, 255, 0.04);
+
+  /* ── Ink (high-contrast off-white) ──────────────────────────────────── */
+
+  --ink: #F5F5F5;
+  --ink-muted: rgba(245, 245, 245, 0.72);
+  --ink-faint: rgba(245, 245, 245, 0.45);
+  /* --ink-on-accent stays white: brand fills are saturated blues, white
+     maintains AA contrast. */
+
+  /* ── Borders (white-on-black) ───────────────────────────────────────── */
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-default: rgba(255, 255, 255, 0.18);
+  --border-strong: rgba(255, 255, 255, 0.36);
+
+  /* ── Brand blues — reserved for interactive accents only ────────────── */
+
+  --accent: #4A78D9;                 /* primary CTA fill, AA white-text */
+  --accent-2: #6FA8FF;               /* links, focus rings */
+  --accent-3: #8FCCFF;               /* secondary highlight */
+  --navy: #FFFFFF;                   /* hero numerals + headers — pure white for max contrast */
+
+  --accent-bg: rgba(111, 168, 255, 0.10);
+  --accent-bg-strong: rgba(111, 168, 255, 0.22);
+  --accent-ring: rgba(111, 168, 255, 0.35);
+
+  /* Grafite — sidebar gradient. Pure black to subtle near-black so the
+     left rail reads as the deepest layer in the hierarchy, with strong
+     contrast against the slightly-lifted page bg. */
+  --grafite-1: #000000;
+  --grafite-2: #0A0A0A;
+
+  /* ── Financial semantics (brighter, AA on dark) ─────────────────────── */
+
+  --up: #3DBA80;
+  --up-bg: rgba(61, 186, 128, 0.14);
+  --up-border: rgba(61, 186, 128, 0.35);
+
+  --down: #E27083;
+  --down-bg: rgba(226, 112, 131, 0.14);
+  --down-border: rgba(226, 112, 131, 0.35);
+
+  --neutral-bg: rgba(229, 233, 240, 0.08);
+
+  /* ── Status extras ──────────────────────────────────────────────────── */
+
+  --gold: #F2C94C;
+  --amber: #E8A35C;
+
+  /* ── Categories (lifted variants for dark surfaces) ─────────────────── */
+
+  --cat-inflacao: #E27083;
+  --cat-juros: #6FA8FF;
+  --cat-cambio: #8FCCFF;
+  --cat-mercado: #B8DCFF;
+  --cat-atividade: #3DBA80;
+  --cat-trabalho: #B49AE6;
+  --cat-fiscal: #8FCCFF;
+  --cat-externo: #E8A35C;
+  --cat-renda-fixa: #4FD1C5;
+  --cat-mercado-intl: #B49AE6;
+  --cat-sustentabilidade: #5BD17C;
+  --cat-governanca: #E8A35C;
+
+  /* ── Scrim (deeper for dark bg, maintains foreground isolation) ─────── */
+
+  --scrim: rgba(0, 0, 0, 0.65);
+
+  /* ── Skeleton shimmer (dark variant) ────────────────────────────────── */
+
+  --skeleton-base: rgba(229, 233, 240, 0.06);
+  --skeleton-shine: rgba(229, 233, 240, 0.18);
+
+  /* ── Shadows (deeper for dark bg) ───────────────────────────────────── */
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.65);
+
+  /* ── Scrollbar ──────────────────────────────────────────────────────── */
+  --scrollbar-thumb: rgba(255, 255, 255, 0.18);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.36);
+
+  --chart-grid: rgba(255, 255, 255, 0.10);
+
+  /* Pure-black sidebar gradient — sidebar reads as the deepest layer
+     against the lifted #121212 page background */
+  --sidebar-bg: linear-gradient(180deg, #000000 0%, #0A0A0A 100%);
+
+  /* Active nav item — lifted white-alpha pill so it reads on pure black */
+  --nav-active-bg: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.10),
+    rgba(255, 255, 255, 0.16)
+  );
+
+  /* Dark mode: brand accent for selected chips (avoids white pill on black) */
+  --chip-selected-bg: var(--accent);
+  --chip-selected-fg: var(--ink-on-accent);
+  --chip-selected-border: var(--accent);
+}
+
+/* Respect OS preference when no explicit data-theme is set.
+   App.tsx still toggles data-theme; this only matters if JS hasn't set it yet
+   (avoids flash of light theme on first paint in dark-OS users). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+  }
+}

@@ -1,0 +1,114 @@
+/* Wrapper anchors the absolute-positioned tooltip to the chart */
+.wrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.sparkline {
+  display: block;
+  overflow: visible;
+  /* Stretch to fill the container width while respecting the aspect ratio */
+  width: 100%;
+  height: auto;
+}
+
+/* Vertical guide line on hover */
+.guide {
+  stroke: var(--ink-muted);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+  pointer-events: none;
+}
+
+/* Highlighted point under the cursor */
+.hoverDot {
+  fill: var(--surface);
+  stroke: currentColor;
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+/* Tooltip — floats above the chart, aligned to hovered x */
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 8px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  white-space: nowrap;
+  /* Center horizontally on the hover x position via translate */
+  transform: translateX(-50%);
+  animation: tooltipIn 80ms ease-out;
+}
+
+@keyframes tooltipIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(2px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* When flipped to the right anchor, undo the centering translate */
+.tooltip[style*='right'] {
+  transform: translateX(50%);
+}
+.tooltip[style*='right'] {
+  animation-name: tooltipInRight;
+}
+@keyframes tooltipInRight {
+  from { opacity: 0; transform: translateX(50%) translateY(2px); }
+  to   { opacity: 1; transform: translateX(50%) translateY(0); }
+}
+
+.tooltipDate {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;     /* 9px */
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+}
+
+.tooltipValue {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;       /* 12px */
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltipUnit {
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltip { animation: none; }
+}
+
+.line {
+  fill: none;
+  stroke: var(--accent-2);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dot {
+  fill: var(--accent-2);
+}
+
+/* Variant colours — polyline takes stroke only (fill stays none),
+   dot takes fill so it renders a coloured terminal marker. */
+.sparkline[data-variant='up'] .line   { stroke: var(--up); }
+.sparkline[data-variant='up'] .dot    { fill: var(--up); }
+
+.sparkline[data-variant='down'] .line { stroke: var(--down); }
+.sparkline[data-variant='down'] .dot  { fill: var(--down); }
+
+.sparkline[data-variant='neutral'] .line { stroke: var(--ink); opacity: 0.45; }
+.sparkline[data-variant='neutral'] .dot  { fill: var(--ink);   opacity: 0.45; }

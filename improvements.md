@@ -1,0 +1,17 @@
+- http://localhost:5174/indices
+    - Title
+        - Rename the title from "Catálogo dos índices ainda não fixados." to índices
+    - ![alt text](image-1.png)
+        - (i) icon, start icon and title ar not yet aligned. Keep trying untill you make all of them same size and aligned (you can resize the title)
+    - "/html/body/div/div/div/main/div[1]/div[2]/button"
+        - Make it expand below
+    - New tool: When clickin in a card do not redirect to metadata, instead do this: 
+        - Open a card like the one in ![alt text](image-2.png)
+        - But instad of JUST showing this, you show with expandible rows: 
+            - Transformation  options, 
+            - The chart format  (bar, series) 
+        - and a button to apply
+        - When applyied, you plot the graph 
+            - Add the option to save the pic or to save the data
+            - Make the graph dynamic (animation after apply)
+        - Apply this in both homepage and here 

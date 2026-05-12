@@ -1,0 +1,252 @@
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  cursor: pointer;
+  position: relative;
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* ── Header row (code + actions) ──────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.code {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  color: var(--navy);
+  line-height: 1;
+}
+
+/* Group info + pin buttons together on the right */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+/* ── Info icon button ─────────────────────────────────────────────────────── */
+
+.infoBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 32px touch target via padding expansion */
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--accent-2);
+  opacity: 0.65;
+  transition: opacity 160ms ease, color 160ms ease, background 160ms ease;
+  padding: 0;
+}
+
+.infoBtn:hover {
+  opacity: 1;
+  color: var(--navy);
+  background: var(--bg-deep);
+}
+
+.infoBtn:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+/* ── Star pin button ──────────────────────────────────────────────────────── */
+
+.starBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: none;
+  cursor: pointer;
+  /* Default: same accent-2 colour at 65% like info icon */
+  color: var(--accent-2);
+  opacity: 0.65;
+  transition: opacity 160ms ease, color 160ms ease, background 160ms ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.starBtn:hover {
+  opacity: 1;
+  color: var(--navy);
+  background: var(--bg-deep);
+}
+
+.starBtn:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+.starBtn.pinned {
+  opacity: 1;
+  color: var(--gold); /* pinned state */
+}
+
+/* ── Info popover ─────────────────────────────────────────────────────────── */
+
+.popover {
+  position: absolute;
+  top: 2.75rem;
+  right: var(--space-4);
+  z-index: 20;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-3);
+  max-width: 220px;
+  min-width: 180px;
+  animation: popoverIn 160ms ease both;
+}
+
+@keyframes popoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.popoverName {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--navy);
+  line-height: 1.4;
+  margin: 0 0 var(--space-2) 0;
+  font-weight: 500;
+}
+
+.popoverMeta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2em var(--space-2);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--ink);
+  opacity: 0.65;
+}
+
+.popoverMeta dt {
+  color: var(--ink);
+  opacity: 0.5;
+  white-space: nowrap;
+}
+
+.popoverMeta dd {
+  margin: 0;
+  color: var(--ink);
+}
+
+/* ── Value row ────────────────────────────────────────────────────────────── */
+
+.valueRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.value {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  color: var(--navy);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  /* Tabular figures so digits align across cards in a grid */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Unit — secondary, mono, baseline-aligned with value. Long-tail
+   qualifier (e.g. "preços 1995") moves into the title tooltip. */
+.unit {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;        /* 11px */
+  color: var(--ink-muted);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: help;
+}
+
+/* ── Delta row ────────────────────────────────────────────────────────────── */
+
+.deltaRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ── Sparkline area ───────────────────────────────────────────────────────── */
+
+.sparklineArea {
+  margin: 0 calc(-1 * var(--space-1));
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;            /* push to bottom of card */
+  padding-top: var(--space-1);
+}
+
+/* Date — relative ("hoje" / "há 3 dias") with absolute date + source on hover */
+.dateRel {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;        /* 11px */
+  font-weight: 500;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  cursor: help;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Frequency micro-pill — single letter (M / Q / D / A / E) */
+.freqPill {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;        /* 9px */
+  font-weight: 700;
+  color: var(--ink-muted);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}

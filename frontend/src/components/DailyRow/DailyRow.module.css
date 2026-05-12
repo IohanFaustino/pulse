@@ -1,0 +1,222 @@
+/**
+ * DailyRow styles — CSS Modules
+ * Design tokens only (no raw hex values).
+ * Touch targets ≥ 44px per chip (min-height enforced).
+ */
+
+/* ── Section shell ────────────────────────────────────────────────────────── */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  border-top: 1px solid var(--bg-deep);
+  padding-top: var(--space-12);
+}
+
+/* ── Section header ───────────────────────────────────────────────────────── */
+
+.sectionHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sectionTitle {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;       /* 14px — mirrors .calendarTitle */
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.55;
+  margin: 0;
+}
+
+.sectionSub {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--ink);
+  opacity: 0.4;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+/* ── Scroll track ─────────────────────────────────────────────────────────── */
+
+.track {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-3);
+  overflow-x: auto;
+  /* Snap to chip starts for smooth keyboard/touch navigation */
+  scroll-snap-type: x mandatory;
+  /* Padding so shadow is not clipped */
+  padding-bottom: var(--space-2);
+  /* Custom scrollbar — 8px height */
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-deep) transparent;
+}
+
+.track::-webkit-scrollbar {
+  height: 8px;
+}
+
+.track::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.track::-webkit-scrollbar-thumb {
+  background: var(--bg-deep);
+  border-radius: var(--radius-pill);
+}
+
+/* ── Chip card ────────────────────────────────────────────────────────────── */
+
+.chip {
+  /* Fixed width so the row doesn't grow unbounded and chips stay compact */
+  flex: 0 0 148px;
+  min-width: 148px;
+  /* Touch target: min-height 44px; padding makes it comfortably tappable */
+  min-height: 44px;
+  padding: var(--space-3);
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--bg-deep);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: box-shadow 120ms ease, border-color 120ms ease;
+  outline: none;   /* replaced by focus-visible ring below */
+}
+
+.chip:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--accent-3);
+}
+
+.chip:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
+  border-color: var(--accent);
+}
+
+/* ── Chip internals ───────────────────────────────────────────────────────── */
+
+/* Top row: code + source badge */
+.chipTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+
+.chipCode {
+  font-family: var(--font-serif);
+  font-size: 0.875rem;    /* 14px per spec */
+  color: var(--navy);
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sourceBadge {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;   /* 9px — compact label */
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.4;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Value row */
+.chipValue {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.chipNumber {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;   /* 13px */
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.chipUnit {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;    /* 10px */
+  color: var(--ink);
+  opacity: 0.5;
+}
+
+.chipNoData {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink);
+  opacity: 0.3;
+}
+
+/* Delta + sparkline row */
+.chipBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.chipDelta {
+  /* DeltaBadge renders its own font; we just size the container */
+  font-size: 0.6875rem;  /* 11px */
+  flex-shrink: 0;
+}
+
+.chipSparkline {
+  flex-shrink: 0;
+}
+
+/* Freshness row */
+.chipFreshness {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Freshness dot — colour driven by data-status attribute */
+.freshnessDoc {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--ink);
+  opacity: 0.3;
+}
+
+.freshnessDoc[data-status='fresh'] {
+  background: var(--up);
+  opacity: 1;
+}
+
+.freshnessDoc[data-status='stale'] {
+  background: var(--amber);
+  opacity: 1;
+}
+
+.freshnessDoc[data-status='failed'] {
+  background: var(--down);
+  opacity: 1;
+}
+
+.freshnessLabel {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;   /* 9px */
+  color: var(--ink);
+  opacity: 0.5;
+  white-space: nowrap;
+}

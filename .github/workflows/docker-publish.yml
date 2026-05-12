@@ -1,0 +1,164 @@
+# .github/workflows/docker-publish.yml
+# Builds and pushes multi-arch Docker images to GitHub Container Registry (GHCR)
+# when a release tag matching v*.*.* is pushed.
+#
+# Images published:
+#   ghcr.io/{owner}/api-extractor-api:{tag}        (e.g. v1.0.0)
+#   ghcr.io/{owner}/api-extractor-api:{commit-sha} (short SHA for traceability)
+#   ghcr.io/{owner}/api-extractor-web:{tag}
+#   ghcr.io/{owner}/api-extractor-web:{commit-sha}
+#
+# Multi-arch: linux/amd64 (CI runners) + linux/arm64 (Apple Silicon / ARM servers).
+# QEMU is required for cross-compilation of arm64 on the amd64 GitHub runner.
+
+name: Docker Publish
+
+on:
+  push:
+    # Only fire on semantic version tags — protects against accidental pushes.
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  # contents:read to checkout the repo.
+  contents: read
+  # packages:write to push images to GHCR.
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  # Image names follow the convention: registry/owner/image-name.
+  # github.repository_owner is automatically lowercased by GitHub.
+  BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/api-extractor-api
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/api-extractor-web
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # publish-backend
+  # Builds the FastAPI image and pushes it with two tags:
+  #   - the release tag (e.g. v1.2.3)   — stable, used in deployment manifests
+  #   - the short commit SHA              — immutable, used for exact rollbacks
+  # ────────────────────────────────────────────────────────────────────────────
+  publish-backend:
+    name: Publish Backend Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # QEMU is required to build arm64 images on the amd64 GitHub-hosted runner.
+      # Without QEMU, the ARM build would fail with "exec format error".
+      - name: Set up QEMU (multi-arch cross-compilation)
+        uses: docker/setup-qemu-action@v3
+
+      # BuildKit (via buildx) enables:
+      #   - Parallel multi-arch builds
+      #   - Layer caching with --cache-from / --cache-to
+      #   - Inline cache metadata in pushed images
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Authenticate to GHCR using the GITHUB_TOKEN provided automatically by
+      # GitHub Actions. No additional secrets needed for public/org repos.
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract the short SHA (7 chars) for the immutable image tag.
+      # We use a run step rather than github.sha directly because GITHUB_SHA
+      # is 40 chars and OCI registries prefer shorter tags for readability.
+      - name: Compute short commit SHA
+        id: sha
+        run: echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      # docker/metadata-action generates OCI-compliant image labels and tags
+      # automatically from the git tag and commit information.
+      - name: Extract Docker metadata (backend)
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.BACKEND_IMAGE }}
+          tags: |
+            # Semantic version tag from git ref (e.g. v1.2.3 → 1.2.3 and v1.2.3).
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            # Short commit SHA for exact rollback identification.
+            type=sha,prefix=,format=short
+          labels: |
+            org.opencontainers.image.title=api-extractor-api
+            org.opencontainers.image.description=Brazilian economic indicators FastAPI backend
+            org.opencontainers.image.vendor=api-extractor
+
+      # Build and push the backend image for both target architectures.
+      # cache-from/to pulls/pushes layer cache from GHCR itself (registry mode)
+      # which persists across runners unlike the ephemeral gha cache.
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          # Build the production runtime stage (not the deps intermediate stage).
+          target: runtime
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          # registry cache mode persists cache across workflow runs (unlike gha cache).
+          cache-from: type=registry,ref=${{ env.BACKEND_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.BACKEND_IMAGE }}:buildcache,mode=max
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # publish-frontend
+  # Builds the React/Vite frontend image and pushes it to GHCR.
+  # Requires frontend/Dockerfile (production Nginx build) to exist.
+  # ────────────────────────────────────────────────────────────────────────────
+  publish-frontend:
+    name: Publish Frontend Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU (multi-arch cross-compilation)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata (frontend)
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.FRONTEND_IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=,format=short
+          labels: |
+            org.opencontainers.image.title=api-extractor-web
+            org.opencontainers.image.description=Brazilian economic indicators React frontend
+            org.opencontainers.image.vendor=api-extractor
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.FRONTEND_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.FRONTEND_IMAGE }}:buildcache,mode=max

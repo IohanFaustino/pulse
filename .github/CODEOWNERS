@@ -1,0 +1,31 @@
+# CODEOWNERS
+# Defines who is automatically requested to review pull requests based on
+# which files are changed. Reviews from a CODEOWNER are required before
+# merging when branch protection rules enforce "Require review from Code Owners".
+#
+# Format: <pattern> <@owner or @org/team>
+#
+# ACTION REQUIRED: Replace @placeholder with the actual GitHub username or team.
+# Example: * @your-github-username
+#          * @your-org/your-team
+#
+# Patterns are evaluated top-to-bottom; the LAST matching pattern takes precedence.
+
+# Default owner for everything in the repository.
+# Replace @placeholder with the real GitHub username.
+* @placeholder
+
+# Backend — Python / FastAPI
+backend/ @placeholder
+
+# Frontend — React / TypeScript
+frontend/ @placeholder
+
+# Infrastructure — Docker, CI/CD, Makefile
+docker-compose.yml @placeholder
+Makefile @placeholder
+infra/ @placeholder
+.github/ @placeholder
+
+# Documentation — ADRs and architecture docs
+docs/ @placeholder

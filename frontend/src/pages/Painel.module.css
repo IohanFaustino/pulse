@@ -1,0 +1,164 @@
+/**
+ * Painel page styles — CSS Modules
+ * Uses design tokens from tokens.css exclusively (no raw hex values).
+ */
+
+/* ── Page shell ────────────────────────────────────────────────────────────── */
+
+.page {
+  padding: var(--space-8) var(--space-8) var(--space-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-height: 100%;
+  width: 100%;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.greetingRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.greeting {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-style: italic;
+  color: var(--navy);
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.date {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  color: var(--ink);
+  opacity: 0.55;
+}
+
+.statusLine {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  color: var(--ink);
+  opacity: 0.6;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+/* ── Controls ───────────────────────────────────────────────────────────────── */
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* ── Category section (grouped Todos mode) ───────────────────────────────────── */
+
+.categorySection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  /* 32px below each category group for clear visual separation */
+  margin-bottom: var(--space-8);
+}
+
+/* Remove bottom margin from the last group — the calendar section provides spacing */
+.categorySection:last-child {
+  margin-bottom: 0;
+}
+
+.categoryTitle {
+  font-family: var(--font-sans);
+  /* 14px caps — secondary hierarchy label, not competing with card values */
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--bg-deep);
+  /* color is set via inline style using categoryColor() token */
+}
+
+/* ── Small-multiples grid ────────────────────────────────────────────────────── */
+
+.grid {
+  display: grid;
+  /* 280px min-width gives cards enough room for the larger sparkline and value */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+/* ── Calendar strip section ─────────────────────────────────────────────────── */
+
+.calendarSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  border-top: 1px solid var(--bg-deep);
+  /* 48px padding-top — gives the strip section visual breathing room */
+  padding-top: var(--space-12);
+}
+
+.calendarTitle {
+  font-family: var(--font-sans);
+  /* 14px caps — mirrors categoryTitle hierarchy */
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.55;
+  margin: 0;
+}
+
+/*
+ * DailyRow sits inside the page flex column just after the calendarSection.
+ * Its own .section rule (DailyRow.module.css) provides the border-top +
+ * padding-top rhythm that matches .calendarSection; no override needed here.
+ */
+
+/* ── Error chip (per-card load failure) ──────────────────────────────────────── */
+
+.errorChip {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--down-border);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.errorCode {
+  font-family: var(--font-serif);
+  font-size: 0.875rem;
+  color: var(--navy);
+}
+
+.errorMsg {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--down);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}

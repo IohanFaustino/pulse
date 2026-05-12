@@ -1,0 +1,133 @@
+# .github/dependabot.yml
+# Dependabot configuration for automated dependency updates.
+#
+# Strategy: weekly updates to batch multiple packages into fewer PRs,
+# keeping noise low while still staying current with security patches.
+# Each ecosystem is capped at 5 open PRs to avoid overwhelming reviewers.
+#
+# Ecosystems configured:
+#   pip           — backend/ Python packages (pyproject.toml + uv.lock)
+#   npm           — frontend/ JavaScript packages (package-lock.json)
+#   docker        — Dockerfile base images in backend/ and root
+#   github-actions — action versions in .github/workflows/
+
+version: 2
+
+updates:
+  # ── Python (pip) ─────────────────────────────────────────────────────────────
+  # Monitors backend/pyproject.toml for outdated Python packages.
+  # Using pip ecosystem because pyproject.toml is the PEP 621-compliant format;
+  # Dependabot parses it natively (uv.lock is not yet directly supported as of 2025).
+  - package-ecosystem: pip
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    target-branch: main
+    open-pull-requests-limit: 5
+    # Group non-breaking minor/patch updates together to reduce PR volume.
+    groups:
+      python-minor-patch:
+        update-types:
+          - minor
+          - patch
+    labels:
+      - dependencies
+      - python
+    commit-message:
+      prefix: "chore(deps)"
+      include: scope
+
+  # ── JavaScript / Node (npm) ──────────────────────────────────────────────────
+  # Monitors frontend/package-lock.json for outdated npm packages.
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    target-branch: main
+    open-pull-requests-limit: 5
+    groups:
+      # Batch all @types/* together — they are almost always safe to update.
+      typescript-types:
+        patterns:
+          - "@types/*"
+        update-types:
+          - minor
+          - patch
+      # Batch Vite ecosystem together — vite, @vitejs/plugin-react, vitest.
+      vite-ecosystem:
+        patterns:
+          - "vite"
+          - "@vitejs/*"
+          - "vitest"
+        update-types:
+          - minor
+          - patch
+    labels:
+      - dependencies
+      - javascript
+    commit-message:
+      prefix: "chore(deps)"
+      include: scope
+
+  # ── Docker (backend Dockerfile) ───────────────────────────────────────────────
+  # Watches the FROM directives in backend/Dockerfile for new base image versions.
+  # Tracks python:3.12-slim used in both the deps and runtime stages.
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    target-branch: main
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: "chore(deps)"
+      include: scope
+
+  # ── Docker (root docker-compose base images) ───────────────────────────────────
+  # Watches the root directory for docker-compose.yml image references.
+  # Tracks timescale/timescaledb:2.26.4-pg16 and redis:7-alpine.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    target-branch: main
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: "chore(deps)"
+      include: scope
+
+  # ── GitHub Actions ───────────────────────────────────────────────────────────
+  # Keeps action versions (uses: owner/action@vX) up to date.
+  # This is important for security: outdated actions may have known CVEs.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    target-branch: main
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "chore(deps)"
+      include: scope

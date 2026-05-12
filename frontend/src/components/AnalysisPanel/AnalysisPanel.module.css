@@ -1,0 +1,490 @@
+/* ── Scrim ────────────────────────────────────────────────────────────────── */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: scrimIn var(--duration-scrim) ease both;
+}
+
+@keyframes scrimIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Panel card ───────────────────────────────────────────────────────────── */
+.panel {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: min(720px, 100%);
+  max-height: 90dvh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  animation: panelEnter var(--duration-modal) ease both;
+}
+
+@keyframes panelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  border-bottom: 1px solid var(--bg-deep);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+}
+
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.4;
+  margin-bottom: var(--space-1);
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: 1.0625rem;
+  color: var(--navy);
+  line-height: 1.3;
+}
+
+.titleCode {
+  font-style: italic;
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink);
+  opacity: 0.4;
+  transition: opacity 120ms ease, background-color 120ms ease;
+  padding: 0;
+}
+
+.closeBtn:hover {
+  opacity: 1;
+  background: var(--bg-deep);
+}
+
+.closeBtn:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+/* ── Accordion ────────────────────────────────────────────────────────────── */
+.accordion {
+  border-bottom: 1px solid var(--bg-deep);
+}
+
+.accordionTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-4) var(--space-6);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 120ms ease;
+}
+
+.accordionTrigger:hover {
+  background: var(--bg);
+}
+
+.chevron {
+  font-style: normal;
+  font-size: 0.875rem;
+  transition: transform var(--duration-sidebar) var(--ease-sidebar);
+  line-height: 1;
+  color: var(--ink);
+  opacity: 0.5;
+}
+
+.chevron.open {
+  transform: rotate(90deg);
+}
+
+.accordionBody {
+  padding: 0 var(--space-6) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* ── Transform groups ─────────────────────────────────────────────────────── */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Section label — semibold sans, ink-muted. Drops the mono uppercase look
+   so subheaders read as section anchors, not noise. */
+.groupLabel {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink-muted);
+}
+
+/* Responsive grid — predictable scannable rows, no surprise wrapping */
+.options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-2);
+}
+
+/* Chip-styled label wrapping a sr-only native radio.
+   Selected state derived via :has(input:checked) — modern browser support. */
+.option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  min-height: 2.5rem;                /* 40px — comfortable touch target */
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-default);
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  /* Spring-feel cubic-bezier (overshoot 1.06 → settle). Bg/border/color
+     stay short for snappy hover; transform springs for tactile feedback. */
+  transition:
+    background-color 160ms ease-out,
+    border-color    160ms ease-out,
+    color           160ms ease-out,
+    transform       240ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow      200ms ease-out;
+  /* Entrance: stagger via inline animation-delay set in tsx (or via
+     :nth-child for graceful default) */
+  animation: chipEnter 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes chipEnter {
+  from { opacity: 0; transform: translateY(4px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)  scale(1); }
+}
+
+/* Stagger first ~12 chips — each subsequent chip enters 24ms later */
+.option:nth-child(1)  { animation-delay:   0ms; }
+.option:nth-child(2)  { animation-delay:  24ms; }
+.option:nth-child(3)  { animation-delay:  48ms; }
+.option:nth-child(4)  { animation-delay:  72ms; }
+.option:nth-child(5)  { animation-delay:  96ms; }
+.option:nth-child(6)  { animation-delay: 120ms; }
+.option:nth-child(7)  { animation-delay: 144ms; }
+.option:nth-child(n+8) { animation-delay: 168ms; }
+
+.option:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent-2);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.option:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
+}
+
+/* Selected chip pops slightly to confirm tap, then settles. Spring curve
+   gives a tactile "click" without feeling jittery. */
+.option:has(input:checked) {
+  animation: chipSelect 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes chipSelect {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+/* Visually hide the native radio but keep it interactive + a11y */
+.option input[type='radio'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus ring on keyboard navigation — projected onto the chip via :has */
+.option:has(input:focus-visible) {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+/* Selected state — accent fill + check icon revealed via ::before */
+.option:has(input:checked) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-on-accent);
+  font-weight: 600;
+}
+
+.option:has(input:checked):hover {
+  background: var(--accent-2);
+  border-color: var(--accent-2);
+}
+
+/* Radio glyph — empty ring → filled accent dot when chip selected.
+   Inner dot rendered via radial-gradient on background; animated by
+   scaling background-size with a spring curve for a tactile pop. */
+.option::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  background:
+    radial-gradient(circle, var(--ink-on-accent) 50%, transparent 51%)
+    no-repeat center / 0 0;
+  transition:
+    border-color    160ms ease-out,
+    background-size 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.option:has(input:checked)::before {
+  border-color: var(--ink-on-accent);
+  background-size: 9px 9px;
+}
+
+/* Reduced motion: kill bounces + entrance, keep instant state change */
+@media (prefers-reduced-motion: reduce) {
+  .option,
+  .option:hover,
+  .option:active,
+  .option:has(input:checked) {
+    animation: none;
+    transform: none;
+    transition-duration: 0ms;
+  }
+  .option::before {
+    transition-duration: 0ms;
+  }
+}
+
+.optionLabel {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  cursor: pointer;
+  /* Allow long labels to wrap inside chip without overflowing */
+  overflow-wrap: anywhere;
+}
+
+/* ── Param inputs ─────────────────────────────────────────────────────────── */
+.paramRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.paramLabel {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink);
+  opacity: 0.55;
+}
+
+.paramInput {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--ink);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  width: 5rem;
+  transition: border-color 120ms ease;
+}
+
+.paramInput:focus {
+  outline: none;
+  border-color: var(--accent-2);
+}
+
+/* ── Apply row ────────────────────────────────────────────────────────────── */
+.applyRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border-subtle);
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+
+.errorMsg {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--down);
+  margin-right: auto;
+}
+
+/* Secondary action — Limpar (resets to "Nível original") */
+.clearBtn {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.clearBtn:hover {
+  color: var(--ink);
+  background: var(--surface-subtle);
+}
+
+.clearBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Keyboard hint — small inline help, center-aligned */
+.kbdHint {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.kbdHint kbd {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  color: var(--ink-muted);
+}
+
+.applyBtn {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-on-accent);
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-pill);
+  transition: background-color 120ms ease;
+}
+
+.applyBtn:hover:not(:disabled) {
+  background: var(--accent-2);
+}
+
+.applyBtn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* ── Chart section ────────────────────────────────────────────────────────── */
+.chartSection {
+  padding: var(--space-4) var(--space-6) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  animation: chartFadeIn 400ms ease both;
+}
+
+@keyframes chartFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chartSection {
+    animation: none;
+  }
+}
+
+/* ── Export row ───────────────────────────────────────────────────────────── */
+.exportRow {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.exportBtn {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--accent-2);
+  background: none;
+  border: 1.5px solid var(--accent-2);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-4);
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+
+.exportBtn:hover {
+  opacity: 1;
+  background: var(--accent-bg);
+}

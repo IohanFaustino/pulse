@@ -1,0 +1,233 @@
+/**
+ * DayDetailModal styles — CSS Modules
+ * Design tokens only. Matches AnalysisPanel animation pattern.
+ * prefers-reduced-motion: no animations.
+ */
+
+/* ── Scrim backdrop ───────────────────────────────────────────────────────── */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: scrimFade 160ms ease both;
+}
+
+@keyframes scrimFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrim {
+    animation: none;
+  }
+}
+
+/* ── Card ─────────────────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: min(520px, 100%);
+  max-height: 80dvh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  animation: cardEnter 220ms ease both;
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  border-bottom: 1px solid var(--bg-deep);
+  flex-shrink: 0;
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+}
+
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.4;
+  margin: 0 0 var(--space-1);
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: 1.0625rem;
+  font-weight: 400;
+  color: var(--navy);
+  line-height: 1.3;
+  margin: 0 0 var(--space-1);
+}
+
+.subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--ink);
+  opacity: 0.45;
+  margin: 0;
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink);
+  opacity: 0.4;
+  transition: opacity 120ms ease, background-color 120ms ease;
+  padding: 0;
+}
+
+.closeBtn:hover {
+  opacity: 1;
+  background: var(--bg-deep);
+}
+
+.closeBtn:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+/* ── Body ─────────────────────────────────────────────────────────────────── */
+
+.body {
+  padding: var(--space-4) var(--space-6) var(--space-6);
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+
+.emptyMsg {
+  font-size: 0.875rem;
+  color: var(--ink);
+  opacity: 0.4;
+  text-align: center;
+  padding: var(--space-8) 0;
+  margin: 0;
+}
+
+/* ── Release list ─────────────────────────────────────────────────────────── */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Release row ──────────────────────────────────────────────────────────── */
+
+.releaseRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-1);
+  border-bottom: 1px solid var(--border-subtle);
+  min-height: 44px;
+  flex-wrap: wrap;
+}
+
+.releaseRow:last-child {
+  border-bottom: none;
+}
+
+/* Code */
+.releaseCode {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--navy);
+  white-space: nowrap;
+  min-width: 5rem;
+}
+
+/* E / R status badge */
+.statusBadge {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 5px;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+}
+
+.badgeE {
+  background: var(--up-bg);
+  color: var(--up);
+  border: 1px solid var(--up-border);
+}
+
+.badgeR {
+  background: var(--down-bg);
+  color: var(--down);
+  border: 1px solid var(--down-border);
+}
+
+/* Category chip */
+.categoryChip {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Fonte */
+.fonte {
+  font-size: 0.6875rem;
+  color: var(--ink);
+  opacity: 0.45;
+  margin-left: auto;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}

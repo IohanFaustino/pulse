@@ -1,0 +1,453 @@
+/* ── Sidebar shell ────────────────────────────────────────────────────────── */
+.sidebar {
+  position: relative;
+  /*
+   * 280px expanded — wider than the previous 240px so nav labels breathe.
+   * Collapsed to 72px: enough for the dot icons + the toggle button.
+   */
+  width: 280px;
+  min-height: 100dvh;
+  /* Theme-aware: navy gradient in light, pure black in dark. Active nav
+     item pill uses the grafite gradient so it stands out as foreground. */
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+  transition:
+    width var(--duration-sidebar) var(--ease-sidebar);
+  /* z-index so sidebar sits above main pane during transition */
+  z-index: 10;
+}
+
+.sidebar.collapsed {
+  width: 72px;
+}
+
+/* ── Toggle button ────────────────────────────────────────────────────────── */
+/*
+ * Previously `right: calc(-1 * var(--space-4))` pushed the button outside
+ * the sidebar bounds — `overflow: hidden` on .sidebar clipped it entirely.
+ *
+ * Fix: anchor INSIDE the sidebar at top:12px / right:12px.
+ * The button is 32×32px circular with a visible border so it reads clearly
+ * against the dark grafite background in both expanded and collapsed states.
+ */
+.toggleBtn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  /* Semi-transparent surface so it contrasts against dark sidebar gradient */
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  /* Chevron is white/surface so it reads on the dark background */
+  color: var(--ink-on-grafite);
+  box-shadow: var(--shadow-sm);
+  /* Always above other sidebar content */
+  z-index: 20;
+  transition: background-color 120ms ease;
+  /* Prevent button from being hidden when brand/nav animate opacity */
+  flex-shrink: 0;
+}
+
+.toggleBtn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.chevron {
+  display: inline-block;
+  font-style: normal;
+  transition: transform var(--duration-sidebar) var(--ease-sidebar);
+  line-height: 1;
+}
+
+.chevron.collapsed {
+  transform: rotate(180deg);
+}
+
+/* ── Brand ────────────────────────────────────────────────────────────────── */
+.brand {
+  /*
+   * Top padding increased to var(--space-12) (48px) so the brand text clears
+   * the toggle button (32px height + 12px top offset = 44px min clearance).
+   */
+  padding: var(--space-12) var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.brandName {
+  font-family: var(--font-serif);
+  font-size: clamp(1.5rem, 1.2vw + 1rem, 1.95rem);
+  font-style: italic;
+  color: var(--ink-on-grafite);
+  white-space: nowrap;
+  opacity: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: opacity var(--duration-sidebar) var(--ease-sidebar);
+}
+
+/* Pulse ECG-line icon — sky accent, sits to the left of "Pulse" wordmark. */
+.brandIcon {
+  color: var(--accent-3);
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(111, 184, 255, 0.45));
+}
+
+/* legacy .brandDot — kept for backwards-compat if any other surface still uses it. */
+.brandDot {
+  color: var(--accent-3);
+  font-style: normal;
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+.sidebar.collapsed .brandName {
+  opacity: 0;
+}
+
+.brandSub {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  color: var(--ink-on-grafite);
+  opacity: 0.5;
+  letter-spacing: 0.12em;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: opacity var(--duration-sidebar) var(--ease-sidebar);
+}
+
+.sidebar.collapsed .brandSub {
+  opacity: 0;
+}
+
+/* ── Nav ──────────────────────────────────────────────────────────────────── */
+.nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* 12px gap between items — clear vertical rhythm */
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-2);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.navItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  /* 10px vertical / 12px horizontal — 44pt-friendly row height */
+  padding: 0.625rem var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--ink-on-grafite);
+  transition:
+    background-color 160ms ease,
+    padding-left 160ms ease,
+    transform 160ms ease;
+  overflow: hidden;
+  white-space: nowrap;
+  /* Minimum height for touch target comfort (≥44px) */
+  min-height: 2.75rem;
+}
+
+.navItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Active state — gradient background + sky accent bar + +6px shift */
+.navItem.active {
+  background: var(--nav-active-bg);
+  padding-left: var(--space-4);
+  transform: translateX(6px);
+}
+
+/* Active accent bar (left border) */
+.navItem.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  bottom: 25%;
+  width: 3px;
+  background: var(--accent-3);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* ── Nav icon ────────────────────────────────────────────────────────────── */
+/*
+ * Wrapper span that holds the 20×20 SVG icon.
+ * color cascade: inactive → dim white, active → sky, hover → full white.
+ * flex-shrink: 0 keeps the icon fixed width in both expanded + collapsed.
+ * display:flex + place-items center ensures the SVG is optically centred.
+ */
+.navIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  /* Inactive: dim white so items read at a glance without shouting */
+  color: rgba(255, 255, 255, 0.55);
+  transition: color 160ms ease;
+}
+
+/* Active item → sky accent color */
+.navItem.active .navIcon {
+  color: var(--accent-3);
+}
+
+/* Hover → full white regardless of active state */
+.navItem:hover .navIcon {
+  color: #ffffff;
+}
+
+/* ── Collapsed overrides for nav items ──────────────────────────────────── */
+/*
+ * When collapsed (72px rail), the label+hint are hidden via opacity on
+ * .navText.  The active item's translateX(6px) would push the icon
+ * off-centre in the narrow rail, so we reset the transform and padding
+ * for active items in collapsed state, keeping the accent bar in place.
+ */
+.sidebar.collapsed .navItem {
+  justify-content: center;
+  padding: 0.625rem 0;
+}
+
+.sidebar.collapsed .navItem.active {
+  /* Reset expanded-state shift — icon must stay centred in 72px */
+  transform: none;
+  padding-left: 0;
+}
+
+.navText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+  transition: opacity var(--duration-sidebar) var(--ease-sidebar);
+}
+
+.sidebar.collapsed .navText {
+  opacity: 0;
+  pointer-events: none;
+  /* width:0 prevents the hidden text from pushing icon off-center */
+  width: 0;
+}
+
+.navLabel {
+  font-family: var(--font-serif);
+  /*
+   * clamp: min ~12.5px, preferred 0.3vw + 0.75rem, max ~15px.
+   * Ensures labels stay legible on small viewports without overflowing on wide.
+   */
+  font-size: clamp(0.78rem, 0.3vw + 0.72rem, 0.94rem);
+  color: var(--ink-on-grafite);
+  line-height: 1;
+}
+
+.navHint {
+  font-family: var(--font-sans);
+  /*
+   * clamp: min ~10px, preferred 0.2vw + 0.6rem, max ~12px.
+   */
+  font-size: clamp(0.625rem, 0.2vw + 0.58rem, 0.75rem);
+  color: var(--ink-on-grafite);
+  opacity: 0.35;
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+
+/* ── Tool row (theme + lang toggles) ─────────────────────────────────────── */
+/*
+ * Sits between the nav and the recents section.
+ * Expanded: horizontal row with sun/moon button + PT|EN pills.
+ * Collapsed: stacks vertically, centred in 72px rail.
+ * Touch target >= 44px on each interactive element.
+ */
+.toolRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.sidebar.collapsed .toolRow {
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) 0;
+}
+
+/* Theme toggle button */
+.themeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* min 44x44px touch target */
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border-radius: var(--radius-md);
+  color: rgba(255, 255, 255, 0.65);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 200ms ease, background-color 200ms ease;
+}
+
+.themeBtn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Respect prefers-reduced-motion — remove color transition */
+@media (prefers-reduced-motion: reduce) {
+  .themeBtn {
+    transition: none;
+  }
+}
+
+/* Lang pills container */
+.langPills {
+  display: flex;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  overflow: hidden;
+  transition: opacity var(--duration-sidebar) var(--ease-sidebar);
+}
+
+/* Hide lang pill labels (not the container) when collapsed */
+.sidebar.collapsed .langPills {
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  padding: 0;
+}
+
+.langPill {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.45);
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  padding: 0.25rem 0.4rem;
+  cursor: pointer;
+  /* Ensure >= 44px touch target via row height */
+  min-height: 1.5rem;
+  transition: color 200ms ease, background-color 200ms ease;
+}
+
+.langPill:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.langPillActive {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .langPill {
+    transition: none;
+  }
+}
+
+/* ── Recents section ──────────────────────────────────────────────────────── */
+.recents {
+  padding: var(--space-3) var(--space-3);
+  overflow: hidden;
+  transition: opacity var(--duration-sidebar) var(--ease-sidebar);
+}
+
+.sidebar.collapsed .recents {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.recentsLabel {
+  font-family: var(--font-mono);
+  /* 11px — readable caps label, matches ui-ux-pro-max §5 label hierarchy */
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-on-grafite);
+  opacity: 0.3;
+  margin-bottom: var(--space-2);
+}
+
+.recentItem {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--ink-on-grafite);
+  opacity: 0.5;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: opacity 120ms ease, background-color 120ms ease;
+  cursor: pointer;
+}
+
+.recentItem:hover {
+  opacity: 0.85;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+.footer {
+  padding: var(--space-4) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.footerDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--up);
+  flex-shrink: 0;
+  /* pulse-sync from globals.css */
+  animation: pulse-sync var(--duration-pulse) ease-in-out infinite;
+}
+
+.footerText {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  color: var(--ink-on-grafite);
+  opacity: 0.3;
+  white-space: nowrap;
+  transition: opacity var(--duration-sidebar) var(--ease-sidebar);
+}
+
+.sidebar.collapsed .footerText {
+  opacity: 0;
+}
