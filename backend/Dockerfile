@@ -3,7 +3,7 @@
 # Stage 2 (runtime): copies only the venv and application source — no build tools.
 
 # ── Stage 1: dependency installer ─────────────────────────────────────────────
-FROM python:3.12-slim AS deps
+FROM python:3.14-slim AS deps
 
 WORKDIR /build
 
@@ -24,7 +24,7 @@ RUN python -m venv /opt/venv \
     && /opt/venv/bin/pip install -e ".[dev]"
 
 # ── Stage 2: runtime ──────────────────────────────────────────────────────────
-FROM python:3.12-slim AS runtime
+FROM python:3.14-slim AS runtime
 
 WORKDIR /app
 
