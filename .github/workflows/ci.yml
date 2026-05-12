@@ -326,7 +326,7 @@ jobs:
       # cache-from/to: export layer cache to GitHub Actions cache so subsequent
       # runs reuse unchanged layers (especially the deps stage).
       - name: Build backend (api) image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./backend
           file: ./backend/Dockerfile
@@ -342,7 +342,7 @@ jobs:
       # frontend/Dockerfile (production Nginx-based build, not the dev Node server).
       # If that Dockerfile doesn't exist yet, this step is skipped gracefully.
       - name: Build frontend (web) image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         # continue-on-error lets the pipeline pass until frontend/Dockerfile exists.
         continue-on-error: true
         with:
