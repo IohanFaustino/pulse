@@ -316,7 +316,7 @@ jobs:
       # QEMU enables multi-arch build simulation on the amd64 runner.
       # We only build for linux/amd64 here (fast); multi-arch happens in publish.
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       # buildx provides BuildKit features: inline cache, multi-stage parallelism.
       - name: Set up Docker Buildx
