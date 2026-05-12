@@ -75,3 +75,11 @@ logs/
 backend/alembic/__pycache__/
 backend/alembic/versions/__pycache__/
 .claude/
+
+# Working artifacts (added during cleanup)
+/API-extractor/
+/image*.png
+/image*.jpg
+/improvements.md
+/*.tmp
+/scratch/

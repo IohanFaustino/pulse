@@ -4,36 +4,108 @@
 
 # Pulse — economic indicators workspace
 
-A personal workspace for tracking **72 Brazilian and international economic indicators** in one place. Pulls live data from official sources (BCB, IBGE, ANBIMA, B3, Yahoo Finance), stores time series locally with full revision history, computes statistical transforms on demand, and renders everything in a pt-BR React dashboard.
+Personal local workspace for tracking **72 Brazilian and international economic indicators** in one place. Pulls live data from official sources (BCB, IBGE, ANBIMA, B3, Yahoo Finance), stores time series locally with full revision history, computes statistical transforms on demand, and renders everything in a pt-BR React dashboard with full EN/PT toggle.
 
-Built as a single-user local app — no cloud bill, no account, no telemetry.
+> Built as a single-user local app — no cloud bill, no account, no telemetry.
+> *App UI is pt-BR by default with an EN toggle. Docs and README in English.*
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![Node 20](https://img.shields.io/badge/node-20-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React 18](https://img.shields.io/badge/React-18-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
+[![TimescaleDB](https://img.shields.io/badge/TimescaleDB-Postgres%2016-FDB515.svg?logo=postgresql&logoColor=white)](https://www.timescale.com/)
+[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-v2-2496ED.svg?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![Tests: 293 backend / 316 frontend](https://img.shields.io/badge/tests-609%20passing-2EA44F.svg)](#tests)
+
+> [!WARNING]
+> **Local single-user deployment only.** This project ships **without authentication** and is intentionally scoped to your own laptop on `localhost` only. `/admin/*` endpoints are unauthenticated. **Do not expose this to the internet as-is.** See [Security](#security) below.
 
 ---
 
-## What it does
+## Table of contents
 
-- **Daily auto-extraction** of 54 daily/event-frequency series (interest rates, FX, equity indexes, fixed-income, international markets) every Mon–Fri at 18:00 BRT
-- **Monthly/quarterly polling** for inflation, GDP, employment, fiscal, external accounts
-- **17 statistical transforms** on demand: MoM, QoQ, YoY, annualized, log-diff, moving averages, EWMA, accumulated 12m, z-score, rebase=100, percentile
-- **Animated charts** (line / bar / area) per series with PNG + CSV export
-- **Release calendar** of upcoming economic indicator releases (scraped from IBGE + BCB + hardcoded fallback)
-- **Personal dashboard**: pin favorite series, save per-card transforms, see recent + sync status
+- [Features](#features)
+- [Requirements](#requirements)
+- [Quickstart](#quickstart)
+- [UI snapshots](#ui-snapshots)
+- [Stack](#stack)
+- [Architecture](#architecture)
+- [How to extend](#how-to-extend)
+- [Make targets](#make-targets)
+- [API endpoints](#api-endpoints)
+- [Tests](#tests)
+- [Documentation index](#documentation-index)
+- [Security](#security)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## Quickstart (5 commands)
+## Features
+
+- **72 economic indicators**, 5 official sources, 12 thematic categories — see [docs/series.md](docs/series.md)
+- **Daily auto-extraction** of 54 daily/event series Mon–Fri at 18:00 BRT (APScheduler)
+- **17 statistical transforms** on demand (MoM, QoQ, YoY, annualized, log-diff, MA, EWMA, accumulated 12m, z-score, rebase=100, percentile) — pandas/numpy server-side, Redis-cached
+- **Animated React dashboard**: 4 pages (Painel · Indices · Calendário · Metadados), pinning, per-card transforms, recent-history sparklines
+- **True dark mode** with high-contrast grayscale surfaces, AAA text contrast, accent-blue interactive elements only
+- **Plotly-style hover tooltips** on every chart and sparkline (date + value + unit)
+- **Tinted sparklines** colour-coded per economic category for instant trend recognition
+- **Animated chip toggles** with spring physics (respects `prefers-reduced-motion`)
+- **pt-BR / EN i18n** — full app surface translates via a single sidebar toggle
+- **Release calendar** scraped from IBGE + BCB (with hardcoded fallback)
+- **Personal dossier** per series — methodology, source, frequency, current value, sparkline, pin/analysis actions
+- **Time-series storage** in Postgres + TimescaleDB hypertable with full revision history
+- **OpenAPI** schema + TypeScript codegen → frontend types stay in sync with backend
+
+---
+
+## Requirements
+
+| Tool                | Min version | Notes                                                         |
+|---------------------|-------------|----------------------------------------------------------------|
+| **Docker Engine**   | 24.x        | Linux / macOS / Windows (WSL2)                                 |
+| **Docker Compose**  | v2.20+      | Bundled with Docker Desktop; on Linux: `docker-compose-plugin` |
+| **Disk**            | ~2 GB       | Postgres + Redis volumes + dependency caches                   |
+| **RAM**             | 2 GB free   | 4 GB recommended for parallel test runs                        |
+| **CPU**             | 2 cores     | Anything modern works                                          |
+| **Network (first run)** | — | Outbound HTTPS to BCB, IBGE, ANBIMA, B3, Yahoo Finance to backfill |
+| **Make**            | any GNU make | Optional but every workflow is one-line via `make`            |
+| **Browser**         | Chromium 100+ / Firefox 100+ / Safari 16+ | For the React UI at `localhost:5174`        |
+
+**No host-side Python or Node toolchain needed for runtime** — everything runs inside containers. (Local Python 3.12 + Node 20 only required if you want to run `make ci-local` outside Docker.)
+
+---
+
+## Quickstart
 
 ```bash
-git clone https://github.com/<you>/api-extractor.git
-cd api-extractor
+git clone git@github.com:IohanFaustino/pulse.git
+cd pulse
 cp .env.example .env
-make up                                              # boot stack
-make migrate && make seed                            # schema + 72 series
-curl -X POST http://localhost:8000/admin/backfill    # ~3-5 min full history
-open http://localhost:5174                           # done
+
+make up                                              # boot 4-service stack
+sleep 10                                             # wait for postgres healthcheck
+make migrate && make seed                            # schema + 72 series metadata
+curl -X POST http://localhost:8000/admin/backfill    # ~3-5 min full history backfill
+open http://localhost:5174                           # → dashboard
 ```
 
-Requirements: **Docker + Docker Compose v2**. Nothing else. All Python/Node toolchains run inside containers.
+That's it. Everything runs locally on Docker.
+
+---
+
+## UI snapshots
+
+> Add screenshots / GIFs to `docs/assets/` and reference them here once captured.
+
+| Page | Description |
+|------|-------------|
+| `docs/assets/painel.png` | **Painel** — pinned series in a dense card grid with sparklines + delta badges |
+| `docs/assets/indices.png` | **Indices** — full catalog grouped by category, each card colour-coded |
+| `docs/assets/calendario.png` | **Calendário** — monthly grid of upcoming/past releases with category chips |
+| `docs/assets/metadados.png` | **Metadados** — per-series dossier with hero value, tinted sparkline, action chips |
+| `docs/assets/analysis.gif` | **Analysis panel** — chip-pop animation when picking a transform |
 
 ---
 
@@ -41,20 +113,36 @@ Requirements: **Docker + Docker Compose v2**. Nothing else. All Python/Node tool
 
 | Layer | Tech |
 |---|---|
-| Frontend | Vite + React 18 + TypeScript |
+| Frontend | Vite + React 18 + TypeScript + TanStack Query + Zustand |
 | Backend | FastAPI + Pydantic v2 + SQLAlchemy 2.x async |
-| Database | Postgres 16 + TimescaleDB (time-series hypertable) |
+| Database | Postgres 16 + TimescaleDB hypertable (ADR-0002) |
 | Cache | Redis 7 (transform results) |
-| Scheduler | APScheduler (3 cron jobs, persisted in Postgres) |
-| Transforms | pandas + numpy |
-| Deploy | Docker Compose, 4 services, local single-user |
+| Scheduler | APScheduler — 3 cron jobs persisted in Postgres (ADR-0005) |
+| Transforms | pandas + numpy, server-side (ADR-0003) |
+| Deploy | Docker Compose, 4 services, single host |
 
 ---
 
-## Project map
+## Architecture
+
+**Modular monolith** (ADR-0001). Layered: `routers → services → repos → models`. Pydantic schemas at boundaries.
+
+**Extraction flow:**
+1. `scheduler.py` (APScheduler) fires `daily_batch` Mon–Fri 18:00 BRT plus monthly + calendar jobs.
+2. Job → `services/extraction` → `extractors/registry.py` dispatches by source slug to a `SourceAdapter` subclass (BCB SGS · IBGE SIDRA · B3 portal · Yahoo · ANBIMA bulk XLSX).
+3. Adapter returns normalised observations → `repos` upserts into the TimescaleDB hypertable. Revisions are kept (history table) — never overwrite blindly.
+
+**Read + transform flow:**
+1. `GET /series/{code}/observations` → repo query on the hypertable.
+2. `POST /series/{code}/transform` with a `TransformSpec` → `transforms/registry.py` resolves the op in `transforms/ops.py` (17 ops) → result cached in Redis (ADR-0006), invalidated when new data arrives.
+
+**Frontend:** types are codegen'd from `/openapi.json` into `frontend/src/api/schema.ts` (ADR-0004) — the backend is the source of truth, never hand-edit.
+
+<details>
+<summary><strong>Full project layout</strong></summary>
 
 ```
-api-extractor/
+pulse/
 ├── README.md                ← this file
 ├── docker-compose.yml       ← 4-service stack
 ├── Makefile                 ← `make up | down | test | seed | migrate`
@@ -97,189 +185,46 @@ api-extractor/
 │       ├── hooks/           ← TanStack Query wrappers
 │       ├── lib/             ← formatPtBR, categoryColor, deltaSemantics
 │       ├── stores/          ← Zustand UI state
-│       ├── styles/          ← design tokens (doc §8 palette)
+│       ├── styles/          ← design tokens (tokens.css)
 │       └── api/             ← schema.ts (openapi-typescript codegen)
 │
-├── docs/
-│   ├── PLAN.md              ← phased build log (waves 0–7 + phases 11–21)
+├── docs/                    ← all documentation
+│   ├── PLAN.md              ← phased build log
 │   ├── USER-GUIDE.md        ← operational manual
+│   ├── series.md            ← full 72-series catalog
+│   ├── roadmap.md           ← upcoming series + ideas
 │   ├── architecture/        ← system design + diagrams
-│   ├── adr/                 ← 8 ADRs
+│   ├── adr/                 ← 8 architecture decision records
 │   ├── data-sources/        ← per-source API contracts
-│   ├── phase-plans/         ← per-wave plan artifacts
-│   ├── VERIFICATION-REPORT.md
-│   └── SECURITY-AUDIT-PREGITHUB.md
+│   └── assets/              ← logo + screenshots
 │
-├── specs/
-│   └── api-extractor.spec.md ← EARS spec + acceptance criteria
-│
-├── infra/
-│   └── postgres/init.sql    ← timescaledb extension bootstrap
-│
-└── .github/
-    ├── workflows/           ← CI + docker-publish + readme
-    ├── ISSUE_TEMPLATE/      ← bug + feature templates pt-BR/en
-    ├── PULL_REQUEST_TEMPLATE.md
-    ├── CODEOWNERS
-    ├── SECURITY.md
-    └── dependabot.yml
+├── infra/postgres/init.sql  ← timescaledb extension bootstrap
+└── .github/                 ← workflows · issue templates · PR template · CODEOWNERS
 ```
 
----
-
-## Series catalog (72)
-
-Series are clustered by **theme** and within each theme sorted by **source**.
-
-### 🟡 Inflação — 5 series
-
-| Source | Code | Frequency |
-|---|---|---|
-| BCB SGS | IGP-DI | monthly |
-| BCB SGS | IGP-M | monthly |
-| BCB SGS | INPC | monthly |
-| BCB SGS | IPCA | monthly |
-| BCB SGS | IPCA-15 | monthly |
-
-### 💰 Juros — 4 series
-
-| Source | Code | Frequency |
-|---|---|---|
-| BCB SGS | CDI | daily |
-| BCB SGS | SELIC | daily |
-| BCB SGS | SELIC_meta | event |
-| BCB SGS | TR | daily |
-
-### 💱 Câmbio — 2 series
-
-| Source | Code | Frequency |
-|---|---|---|
-| BCB SGS | PTAX_EUR | daily |
-| BCB SGS | PTAX_USD | daily |
-
-### 📈 Atividade — 5 series
-
-| Source | Code | Frequency |
-|---|---|---|
-| BCB SGS | IBC-Br | monthly |
-| IBGE SIDRA | PIB_Nominal | quarterly |
-| IBGE SIDRA | PIB_Real | quarterly |
-| IBGE SIDRA | Prod_Industrial | monthly |
-| IBGE SIDRA | Vendas_Varejo | monthly |
-
-### 👷 Trabalho — 3 series
-
-| Source | Code | Frequency |
-|---|---|---|
-| BCB SGS | CAGED | monthly |
-| IBGE SIDRA | Desemprego | quarterly |
-| IBGE SIDRA | Rendimento_Medio | quarterly |
-
-### 🏛️ Fiscal — 2 series
-
-| Source | Code | Frequency |
-|---|---|---|
-| BCB SGS | Divida_Bruta | monthly |
-| BCB SGS | Resultado_Primario | monthly |
-
-### 🌍 Externo — 3 series
-
-| Source | Code | Frequency |
-|---|---|---|
-| BCB SGS | Balanca_Comercial | monthly |
-| BCB SGS | Conta_Corrente | monthly |
-| BCB SGS | Reservas_Internacionais | monthly |
-
-### 📊 Mercado (Brasil) — 4 series
-
-| Source | Code | Frequency |
-|---|---|---|
-| B3 portal | IBrX_50 | daily |
-| B3 portal | IBrX_100 | daily |
-| Yahoo Finance | Ibovespa (^BVSP) | daily |
-| Yahoo Finance | IFIX (XFIX11.SA proxy) | daily |
-
-### 🌐 Mercado Internacional — 7 series
-
-| Source | Code | Frequency |
-|---|---|---|
-| Yahoo Finance | DJIA (^DJI, USD) | daily |
-| Yahoo Finance | Euro_Stoxx_50 (^STOXX50E, EUR) | daily |
-| Yahoo Finance | MSCI_EM (EEM proxy, USD) | daily |
-| Yahoo Finance | MSCI_World (URTH proxy, USD) | daily |
-| Yahoo Finance | Nasdaq_100 (^NDX, USD) | daily |
-| Yahoo Finance | Nasdaq_Composite (^IXIC, USD) | daily |
-| Yahoo Finance | SP500 (^GSPC, USD) | daily |
-
-### 🏦 Governança — 4 series
-
-| Source | Code | Frequency |
-|---|---|---|
-| B3 portal | IGCT_B3 | daily |
-| B3 portal | IGC_B3 | daily |
-| B3 portal | IGC_NM_B3 | daily |
-| B3 portal | ITAG_B3 | daily |
-
-### 🌿 Sustentabilidade — 3 series
-
-| Source | Code | Frequency |
-|---|---|---|
-| B3 portal | ICO2_B3 | daily |
-| B3 portal | ISE_B3 | daily |
-| Yahoo Finance | SP500_ESG (^SPESG, USD) | daily |
-
-### 💼 Multimercado — 1 series
-
-| Source | Code | Frequency |
-|---|---|---|
-| ANBIMA | IHFA (Hedge Funds) | daily |
-
-### 🧾 Renda Fixa (ANBIMA) — 29 series
-
-All daily, source = ANBIMA (bulk XLSX from `data.anbima.com.br`).
-
-| Family | Codes |
-|---|---|
-| **IMA** | IMA-Geral · IMA-Geral_ex-C · IMA-S |
-| **IMA-B** (IPCA-linked) | IMA-B · IMA-B_5 · IMA-B_5plus · IMA-B_5_P2 |
-| **IRF-M** (prefixed) | IRF-M · IRF-M_1 · IRF-M_1plus · IRF-M_P2 · IRF-M_P3 |
-| **IDA** (debêntures) | IDA_Geral · IDA_DI · IDA_IPCA · IDA_IPCA_Infra · IDA_IPCA_ExInfra · IDA_Liq_Geral · IDA_Liq_DI · IDA_Liq_IPCA · IDA_Liq_IPCA_Infra |
-| **IDKA** (constant duration) | IDKA_PRE_3M · IDKA_PRE_1A · IDKA_PRE_2A · IDKA_PRE_3A · IDKA_PRE_5A · IDKA_IPCA_2A · IDKA_IPCA_3A · IDKA_IPCA_5A |
-
-### Source totals
-
-| Source | # series | Notes |
-|---|---|---|
-| **ANBIMA** | 30 | Bulk XLSX from S3 (`data.anbima.com.br`) — full history per file |
-| **BCB SGS** | 24 | Per-date JSON, 10-year window cap → chunked |
-| **Yahoo Finance** | 10 | yfinance 1.3.0; ETF proxies for IFIX, MSCI_World, MSCI_EM |
-| **B3 portal** | 8 | `sistemaswebb3-listados.b3.com.br` JSON proxy (no auth) |
-| **IBGE SIDRA** | 5 | Variable + classification map (`IBGE_VARIABLE_MAP`) |
-| **Total** | **72** | 4 migrations · 12 categories |
-
-Detailed per-source contracts in `docs/data-sources/`.
+</details>
 
 ---
 
 ## How to extend
 
 1. **Add a new series**:
-   - Append entry to `backend/data/series.seed.json` with `code`, `name`, `category`, `source`, `source_id`, `frequency`, `unit`, `currency`, `is_proxy`, `first_observation`
-   - If source = "IBGE SIDRA": also add to `IBGE_VARIABLE_MAP` in `backend/src/api_extractor/extractors/ibge_sidra.py`
-   - Run `make seed` then `curl -X POST http://localhost:8000/admin/extract/{code}`
+   - Append entry to `backend/data/series.seed.json` with `code`, `name`, `category`, `source`, `source_id`, `frequency`, `unit`, `currency`, `is_proxy`, `first_observation`.
+   - If `source = "IBGE SIDRA"`: also add to `IBGE_VARIABLE_MAP` in `backend/src/api_extractor/extractors/ibge_sidra.py`.
+   - Run `make seed` then `curl -X POST http://localhost:8000/admin/extract/{code}`.
 
 2. **Add a new source**:
-   - Subclass `SourceAdapter` in `backend/src/api_extractor/extractors/base.py`
-   - Register in `backend/src/api_extractor/extractors/registry.py` (`_SOURCE_SLUG_MAP` + `_ADAPTERS`)
-   - Write `docs/data-sources/{slug}.md` documenting endpoint + auth + response shape
-   - Add tests + fixture
+   - Subclass `SourceAdapter` in `backend/src/api_extractor/extractors/base.py`.
+   - Register in `backend/src/api_extractor/extractors/registry.py` (`_SOURCE_SLUG_MAP` + `_ADAPTERS`).
+   - Document in `docs/data-sources/{slug}.md` (endpoint + auth + response shape).
+   - Add tests + fixture.
 
 3. **Add a new transform**:
-   - Add function to `backend/src/api_extractor/transforms/ops.py`
-   - Register in `transforms/registry.py` `TRANSFORMS` dict
-   - Update `TransformSpec.op` Literal in `transforms/spec.py`
-   - Add radio in `frontend/src/components/TransformModal/`
-   - Add unit test in `backend/tests/test_transforms.py`
+   - Add the function to `backend/src/api_extractor/transforms/ops.py`.
+   - Register in `transforms/registry.py::TRANSFORMS`.
+   - Extend the `TransformSpec.op` Literal in `transforms/spec.py`.
+   - Add a chip in `frontend/src/components/AnalysisPanel/`.
+   - Add a unit test in `backend/tests/test_transforms.py`.
 
 ---
 
@@ -301,6 +246,8 @@ make shell-api    # bash in api container
 make shell-db     # psql in postgres
 ```
 
+---
+
 ## API endpoints
 
 | Method | Path | Purpose |
@@ -308,16 +255,24 @@ make shell-db     # psql in postgres
 | GET | `/series` | List all 72 + status |
 | GET | `/series/{code}` | Single series metadata |
 | GET | `/series/{code}/observations?from=&to=&limit=` | Raw observations |
-| POST | `/series/{code}/transform` | Apply transform spec |
+| POST | `/series/{code}/transform` | Apply a transform spec |
 | GET | `/releases?month=YYYY-MM&category=` | Calendar events |
 | GET/PATCH | `/user_prefs` | Pins + transforms + recents |
-| POST | `/admin/extract/{code}` | Manual extract one |
-| POST | `/admin/backfill` | Manual backfill all |
+| POST | `/admin/extract/{code}` | Manual extract one series |
+| POST | `/admin/backfill` | Manual backfill all series |
 | POST | `/admin/refresh-calendar` | Refresh release calendar |
 | GET/POST | `/admin/scheduler/...` | List + trigger scheduler jobs |
 | GET | `/health` | Status + per-series freshness |
 
-Full interactive docs: `http://localhost:8000/docs` (Swagger) · `/redoc` (ReDoc) · `/openapi.json`.
+Example transform request:
+
+```bash
+curl -X POST http://localhost:8000/series/IPCA/transform \
+  -H "Content-Type: application/json" \
+  -d '{"op":"yoy"}'
+```
+
+Full interactive docs: `http://localhost:8000/docs` (Swagger) · `/redoc` · `/openapi.json`.
 
 ---
 
@@ -327,9 +282,9 @@ Full interactive docs: `http://localhost:8000/docs` (Swagger) · `/redoc` (ReDoc
 - **Frontend** (vitest): **316 pass / 0 TS errors** — components, hooks, pages, integration
 
 ```bash
-make test                          # backend
-docker compose exec web npm run test
-docker compose exec web npm run typecheck
+make test                                 # backend
+docker compose exec web npm run test      # frontend
+docker compose exec web npm run typecheck # frontend types
 ```
 
 CI runs both on every push/PR via `.github/workflows/ci.yml`.
@@ -340,33 +295,26 @@ CI runs both on every push/PR via `.github/workflows/ci.yml`.
 
 | File | Purpose |
 |---|---|
-| `docs/USER-GUIDE.md` | Operational manual (services, endpoints, troubleshooting) |
-| `docs/PLAN.md` | Full build log: 22 phases, agent matrix, deviation tracking |
-| `docs/architecture/system-design.md` | System diagrams + data model |
-| `docs/adr/` | 8 architecture decision records |
-| `docs/data-sources/` | Per-source API contracts (BCB, IBGE, B3 portal, Yahoo, ANBIMA, calendar) |
-| `docs/phase-plans/` | Per-wave plan artifacts (W0..W7 + phases 11–21) |
-| `docs/SECURITY-AUDIT-PREGITHUB.md` | Pre-push security findings |
-| `specs/api-extractor.spec.md` | EARS specification + acceptance criteria |
+| [docs/USER-GUIDE.md](docs/USER-GUIDE.md) | Operational manual (services, endpoints, troubleshooting) |
+| [docs/series.md](docs/series.md) | Full 72-series catalog grouped by theme |
+| [docs/roadmap.md](docs/roadmap.md) | Upcoming series + ideas |
+| [docs/PLAN.md](docs/PLAN.md) | Full build log: 22 phases, agent matrix, deviation tracking |
+| [docs/architecture/system-design.md](docs/architecture/system-design.md) | System diagrams + data model |
+| [docs/adr/](docs/adr/) | 8 architecture decision records |
+| [docs/data-sources/](docs/data-sources/) | Per-source API contracts (BCB, IBGE, B3 portal, Yahoo, ANBIMA, calendar) |
+| [docs/SECURITY-AUDIT-PREGITHUB.md](docs/SECURITY-AUDIT-PREGITHUB.md) | Pre-push security findings |
+| [specs/api-extractor.spec.md](specs/api-extractor.spec.md) | EARS specification + acceptance criteria |
 
 ---
 
-## License
-
-MIT — see `LICENSE`. Permissive: use freely, modify, redistribute. No warranty.
-
-Brand assets / official names of indices (IPCA, IBOVESPA, IMA, etc) belong to their respective publishers (IBGE, BCB, B3, ANBIMA, S&P, MSCI, FTSE, etc). This project pulls publicly available data via documented endpoints and does not redistribute it independently.
-
----
-
-## ⚠️ Warning — local single-user deployment only
+## Security
 
 This project ships **without authentication** and is intentionally scoped to a **local, single-user, trusted-network deployment** (your own laptop, behind your own firewall, on `localhost` ports only).
 
 **Do NOT expose this to the internet as-is.** Specifically:
 
 - `/admin/*` endpoints are unauthenticated and let any caller trigger backfills, refresh the calendar, fire scheduler jobs, and overwrite user prefs.
-- Postgres defaults to `postgres / postgres` from `.env.example`. Replace before production.
+- Postgres defaults to `postgres / postgres` from `.env.example`. Replace before any non-local deploy.
 - Redis is published without auth on `localhost:6379`. Do not bind to public interfaces.
 - The FastAPI service listens on `0.0.0.0:8000` inside the container. Map only to `127.0.0.1:8000` if you publish ports.
 - CORS allows the dev frontend origin. Tighten or remove for any non-local deploy.
@@ -377,10 +325,29 @@ If you want to deploy to a VPS or share with others:
 2. Strengthen `.env` (rotate Postgres + Redis credentials).
 3. Move secrets out of `.env` into a secret manager (Vault, AWS Secrets Manager, Doppler).
 4. Bind containers to loopback or place behind a reverse proxy (Caddy, nginx, Traefik) with TLS.
-5. Review `docs/SECURITY-AUDIT-PREGITHUB.md` Section E (production-deployment caveats).
+5. Review [docs/SECURITY-AUDIT-PREGITHUB.md](docs/SECURITY-AUDIT-PREGITHUB.md) Section E (production-deployment caveats).
 
 For local personal use as intended, none of this matters.
 
+To report a vulnerability privately, see [SECURITY.md](SECURITY.md).
+
 ---
 
-Built with care over multiple iterative phases. Issues and PRs welcome — see `.github/ISSUE_TEMPLATE/` to get started.
+## Contributing
+
+Issues and PRs welcome. See [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE/) and [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) to get started.
+
+Before opening a PR:
+
+```bash
+make ci-local       # replicate CI: ruff + pytest + tsc + prettier
+make secrets-scan   # gitleaks against working tree
+```
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE). Permissive: use freely, modify, redistribute. No warranty.
+
+Brand assets / official names of indices (IPCA, IBOVESPA, IMA, etc.) belong to their respective publishers (IBGE, BCB, B3, ANBIMA, S&P, MSCI, FTSE, etc.). This project pulls publicly available data via documented endpoints and does not redistribute it independently.
