@@ -96,7 +96,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # actions/setup-python@v5 includes pip caching; we cache based on the
       # lock file (uv.lock) for reproducible installs.
@@ -179,7 +179,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -237,7 +237,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # ── Python linting (ruff) ──────────────────────────────────────────────
       - name: Set up Python ${{ env.PYTHON_VERSION }}
@@ -311,7 +311,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # QEMU enables multi-arch build simulation on the amd64 runner.
       # We only build for linux/amd64 here (fast); multi-arch happens in publish.
@@ -368,7 +368,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # gitleaks needs full history to detect secrets in older commits.
           fetch-depth: 0
